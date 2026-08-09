@@ -17,7 +17,7 @@ alwaysApply: false
 
 - Autorizar com `supabase.auth.getUser()` (valida JWT no Auth server).
 - Não usar `getSession()` sozinho para proteger admin/actions.
-- Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nunca service role no client).
+- Env: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Nunca service role no client.
 
 ## Schema / RLS
 
