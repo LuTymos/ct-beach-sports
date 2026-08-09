@@ -1,0 +1,21 @@
+---
+description: Estrutura de pastas e naming do MVP
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Estrutura
+
+```
+src/app/                 rotas (Server Components por padrão)
+src/components/ui/       shadcn
+src/features/<domínio>/  queries.ts + actions.ts (+ UI da feature)
+src/lib/scoring.ts       única fonte de pontos
+src/lib/supabase/        client / server / middleware helpers
+src/types/               tipos compartilhados
+supabase/migrations/     SQL + RLS
+```
+
+- Nomear actions `*Action`; queries de leitura em `queries.ts`.
+- Não criar `src/pages/` (Pages Router) nem API routes CRUD no MVP.
+- Colocar lógica de domínio perto da feature; UI genérica em `components/`.

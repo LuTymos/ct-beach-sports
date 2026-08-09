@@ -1,0 +1,13 @@
+---
+description: Next.js + shadcn path conventions (legado, ver nextjs-16 e shadcn-ui)
+globs: src/**/*.{ts,tsx},components.json
+alwaysApply: false
+---
+
+# Convenções de pastas
+
+- UI base: `src/components/ui` (shadcn) — detalhes em rule `shadcn-ui`.
+- Features: `src/features/ranking`, `src/features/admin` (queries + actions).
+- Rotas públicas em `src/app`; admin em `src/app/admin` (login: `/admin/login`).
+- Utils: `cn()` em `@/lib/utils`; pontuação em `@/lib/scoring`.
+- APIs Next 16 / RSC: ver rules `nextjs-16` e `react-rsc`.

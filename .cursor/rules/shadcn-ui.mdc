@@ -1,0 +1,14 @@
+---
+description: shadcn/ui (new-york) + Radix no projeto
+globs: src/components/**/*.{ts,tsx},components.json
+alwaysApply: false
+---
+
+# shadcn/ui
+
+- Base em `src/components/ui` (estilo new-york). Adicionar via `npx shadcn@latest add <name>`.
+- Não editar primitivos Radix à mão se o CLI cobre; customizar com `className` + `cn()`.
+- Componentes em `ui/` que usam estado Radix já são `"use client"` — ok.
+- Features/páginas importam de `@/components/ui/*`, não reexportam cópias.
+- Select/Dialog no admin: Radix **não** envia `name` nativo no FormData — usar hidden input, estado controlado, ou select nativo quando a action depender de `FormData`.
+- Toasts: Sonner (`@/components/ui/sonner`).

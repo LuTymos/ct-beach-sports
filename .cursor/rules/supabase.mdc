@@ -1,0 +1,27 @@
+---
+description: Supabase SSR (@supabase/ssr 0.6) + RLS
+globs: src/lib/supabase/**/*,supabase/**/*,src/features/**/*.ts
+alwaysApply: false
+---
+
+# Supabase (@supabase/ssr 0.6 + supabase-js 2.x)
+
+## Clients (oficial)
+
+- Browser: `createBrowserClient` em `src/lib/supabase/client.ts`
+- Server: `createServerClient` + `await cookies()` em `server.ts` (recriar por request)
+- Session refresh: `updateSession` em `middleware.ts` — cookies só com `getAll` / `setAll`
+- **Proibido:** `@supabase/auth-helpers-nextjs` e cookie API antiga `get`/`set`/`remove`
+
+## Auth
+
+- Autorizar com `supabase.auth.getUser()` (valida JWT no Auth server).
+- Não usar `getSession()` sozinho para proteger admin/actions.
+- Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nunca service role no client).
+
+## Schema / RLS
+
+- Migrations em `supabase/migrations/`; seed em `supabase/seed.sql`.
+- Tabelas MVP: `athletes`, `stages`, `results`.
+- RLS: SELECT público; INSERT/UPDATE/DELETE só `authenticated`.
+- Sem tabela `registrations` no MVP.

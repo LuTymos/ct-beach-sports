@@ -1,0 +1,13 @@
+---
+description: Regras de pontuação do torneio
+globs: src/lib/scoring.ts,src/features/**/*.ts,src/features/**/*.tsx,src/app/admin/**/*.tsx
+alwaysApply: false
+---
+
+# Pontuação
+
+- Sempre usar `calculatePoints` de `@/lib/scoring`.
+- Séries: `ouro` | `prata` | `bronze` | `participacao`.
+- Participação: 5 pts, `placement` deve ser `null`.
+- Pódio: placement 1–4; nunca somar participação em cima do pódio.
+- Múltiplos resultados por atleta/etapa são válidos.

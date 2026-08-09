@@ -1,0 +1,31 @@
+---
+description: Next.js 16.3 App Router — async APIs, Turbopack, docs
+globs: src/app/**/*.{ts,tsx},src/middleware.ts,next.config.*
+alwaysApply: false
+---
+
+# Next.js 16.3
+
+Antes de APIs novas/desconhecidas, ler `node_modules/next/dist/docs/` (versão instalada). Não assumir Next 13/14.
+
+## Async Request APIs (obrigatório)
+
+`cookies()`, `headers()`, `draftMode()`, `params` e `searchParams` são **async**:
+
+```tsx
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+}
+```
+
+## Padrões
+
+- Turbopack é default em `next dev` / `next build` — não adicionar webpack custom sem necessidade.
+- `next lint` foi removido → usar `npm run lint` (ESLint CLI + `eslint-config-next`).
+- Mutations via Server Actions (`'use server'`), não Route Handlers CRUD no MVP.
+- Após mutação: `revalidatePath` (e `redirect` só depois da revalidação se necessário).
+- Hoje o projeto usa `src/middleware.ts`. Next 16 depreca o nome em favor de `proxy`; **não migrar sem pedido** — se migrar, seguir docs Next 16 + guia Supabase SSR.
+
+## Segurança de actions
+
+Toda action é endpoint público: autenticar, autorizar e validar input no servidor (UI não é boundary).

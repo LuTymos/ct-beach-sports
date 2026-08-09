@@ -1,0 +1,26 @@
+---
+description: React 19.2 Server/Client Components boundary
+globs: src/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# React 19.2 — RSC
+
+Default = Server Component. `"use client"` só na folha que precisa de:
+
+- state/effects (`useState`, `useEffect`, …)
+- handlers (`onClick`, `onChange`, …)
+- APIs de browser (`window`, `localStorage`, …)
+- libs client-only (Radix dialog/select, Sonner, etc.)
+
+## Composição
+
+- Não colocar `"use client"` em `layout.tsx` / páginas inteiras sem necessidade.
+- Passar Server Components como `children` para wrappers client.
+- Fetch de dados no servidor (`src/features/**/queries.ts`); client recebe props serializáveis.
+- Não usar `useMemo`/`useCallback` por padrão (React Compiler pode ser habilitado depois; não é requisito do MVP).
+
+```tsx
+// ❌ page.tsx inteira client só por causa de um botão
+// ✅ page server + <DeleteButton /> client na folha
+```

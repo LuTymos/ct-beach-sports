@@ -1,0 +1,22 @@
+---
+description: TypeScript 5.9 standards for this repo
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript (5.9)
+
+- Prefer `unknown` over `any`; narrow with type guards or Zod.
+- Tipar retorno de Server Actions e queries (`Promise<{ ok: true } | { ok: false; error: string }>` quando fizer sentido).
+- Usar tipos do domínio em `@/types`; não reinventar unions de série/placement.
+- Evitar non-null `!` em dados de formulário/DB — validar antes.
+- Imports com alias `@/`; sem deep imports de `node_modules`.
+
+```ts
+// ❌
+const id = formData.get("id")!.toString();
+
+// ✅
+const id = String(formData.get("id") ?? "");
+if (!id) return { ok: false, error: "ID obrigatório" };
+```

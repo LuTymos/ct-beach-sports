@@ -1,0 +1,22 @@
+---
+description: Tailwind CSS v4 + tokens do projeto
+globs: src/**/*.{css,tsx},postcss.config.*
+alwaysApply: false
+---
+
+# Tailwind v4.3
+
+- Entry: `@import "tailwindcss"` em `src/app/globals.css` (não `@tailwind base/components/utilities`).
+- PostCSS: só `@tailwindcss/postcss` (autoprefixer embutido — não readicionar).
+- Tokens: CSS vars em `:root` + mapeamento em `@theme inline` (padrão shadcn deste repo).
+- Classes com `cn()` de `@/lib/utils` (`clsx` + `tailwind-merge`).
+- Evitar `@apply` excessivo; preferir utilities + componentes shadcn.
+- Não criar `tailwind.config.js` v3 sem necessidade — config é CSS-first.
+
+```css
+/* ✅ */
+@import "tailwindcss";
+@theme inline {
+  --color-primary: var(--primary);
+}
+```

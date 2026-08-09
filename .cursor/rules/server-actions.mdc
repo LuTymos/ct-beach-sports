@@ -1,0 +1,30 @@
+---
+description: Server Actions — auth, Zod 4, revalidate
+globs: src/features/**/*.ts,src/app/**/actions.ts
+alwaysApply: false
+---
+
+# Server Actions
+
+Versões: Next 16.3 + Zod 4.4. Colocar actions em `src/features/*/actions.ts` com `'use server'`.
+
+## Checklist em toda action de escrita
+
+1. Auth: `supabase.auth.getUser()` (nunca confiar só em `getSession()`).
+2. Validar `FormData` com Zod (`safeParse`) — input é untrusted.
+3. Pontos só via `calculatePoints` de `@/lib/scoring`.
+4. `revalidatePath` nas rotas afetadas.
+5. Retorno serializável e mínimo (não vazar rows crus desnecessários).
+
+```ts
+const parsed = schema.safeParse({ name: formData.get("name") });
+if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+```
+
+## Zod 4 (não Zod 3)
+
+- Preferir `z.email()`, `z.uuid()`, etc. no top-level (métodos `z.string().email()` estão deprecated).
+- Mensagens com `{ error: "..." }` (não `message` / `required_error`).
+- Preferir `safeParse` a `try/catch` + `parse`.
+
+Client forms ricos: `react-hook-form` + `@hookform/resolvers` (Zod 4). Forms admin simples: `<form action={...}>` + FormData nativo está ok.
