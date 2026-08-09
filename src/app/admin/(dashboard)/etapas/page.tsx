@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createStageAction } from "@/features/admin/actions";
 import { getStages } from "@/features/ranking/queries";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; updated?: string }>;
 };
 
 const selectClassName = cn(
@@ -24,7 +25,7 @@ const selectClassName = cn(
 );
 
 export default async function AdminStagesPage({ searchParams }: PageProps) {
-  const { error } = await searchParams;
+  const { error, updated } = await searchParams;
   const stages = await getStages();
 
   return (
@@ -33,6 +34,11 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {updated && (
+        <Alert>
+          <AlertDescription>Etapa atualizada com sucesso.</AlertDescription>
         </Alert>
       )}
 
@@ -83,7 +89,9 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
               <TableHead>#</TableHead>
               <TableHead>Título</TableHead>
               <TableHead>Data</TableHead>
+              <TableHead>Local</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-[1%] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -92,7 +100,13 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
                 <TableCell>{stage.sort_order}</TableCell>
                 <TableCell className="font-medium">{stage.title}</TableCell>
                 <TableCell>{stage.date}</TableCell>
+                <TableCell>{stage.location ?? "—"}</TableCell>
                 <TableCell>{stage.status === "completed" ? "Realizada" : "Agendada"}</TableCell>
+                <TableCell className="text-right">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/etapas/${stage.id}`}>Editar</Link>
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
