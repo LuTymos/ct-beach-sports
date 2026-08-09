@@ -4,6 +4,42 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculatePoints, type Placement, type Series } from "@/lib/scoring";
+import { stageFormSchema, updateStageFormSchema } from "@/features/admin/stage-schema";
+
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    redirect("/admin/login");
+  }
+
+  return supabase;
+}
+
+function stageFieldsFromForm(formData: FormData) {
+  return {
+    title: String(formData.get("title") ?? ""),
+    date: String(formData.get("date") ?? ""),
+    location: String(formData.get("location") ?? ""),
+    status: String(formData.get("status") ?? "scheduled"),
+    audit_url: String(formData.get("audit_url") ?? ""),
+    sort_order: formData.get("sort_order") ?? 0,
+  };
+}
+
+function revalidateStagePaths(stageId?: string) {
+  revalidatePath("/");
+  revalidatePath("/etapas");
+  revalidatePath("/admin/etapas");
+  if (stageId) {
+    revalidatePath(`/etapas/${stageId}`);
+    revalidatePath(`/admin/etapas/${stageId}`);
+  }
+}
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -29,7 +65,7 @@ export async function createAthleteAction(formData: FormData) {
   const team = String(formData.get("team") ?? "").trim() || null;
   if (!name) redirect("/admin/atletas?error=Nome+obrigatorio");
 
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
   const { error } = await supabase.from("athletes").insert({ name, team });
   if (error) redirect(`/admin/atletas?error=${encodeURIComponent(error.message)}`);
 
@@ -39,29 +75,43 @@ export async function createAthleteAction(formData: FormData) {
 }
 
 export async function createStageAction(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  const date = String(formData.get("date") ?? "");
-  const location = String(formData.get("location") ?? "").trim() || null;
-  const status = String(formData.get("status") ?? "scheduled");
-  const audit_url = String(formData.get("audit_url") ?? "").trim() || null;
-  const sort_order = Number(formData.get("sort_order") ?? 0);
+  const parsed = stageFormSchema.safeParse(stageFieldsFromForm(formData));
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
+    redirect(`/admin/etapas?error=${encodeURIComponent(message)}`);
+  }
 
-  if (!title || !date) redirect("/admin/etapas?error=Titulo+e+data+obrigatorios");
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("stages").insert({
-    title,
-    date,
-    location,
-    status,
-    audit_url,
-    sort_order,
-  });
+  const supabase = await requireAdmin();
+  const { error } = await supabase.from("stages").insert(parsed.data);
   if (error) redirect(`/admin/etapas?error=${encodeURIComponent(error.message)}`);
 
-  revalidatePath("/etapas");
-  revalidatePath("/admin/etapas");
+  revalidateStagePaths();
   redirect("/admin/etapas");
+}
+
+export async function updateStageAction(formData: FormData) {
+  const parsed = updateStageFormSchema.safeParse({
+    id: String(formData.get("id") ?? ""),
+    ...stageFieldsFromForm(formData),
+  });
+
+  if (!parsed.success) {
+    const id = String(formData.get("id") ?? "");
+    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
+    const target = id ? `/admin/etapas/${id}` : "/admin/etapas";
+    redirect(`${target}?error=${encodeURIComponent(message)}`);
+  }
+
+  const { id, ...fields } = parsed.data;
+  const supabase = await requireAdmin();
+  const { error } = await supabase.from("stages").update(fields).eq("id", id);
+
+  if (error) {
+    redirect(`/admin/etapas/${id}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidateStagePaths(id);
+  redirect("/admin/etapas?updated=1");
 }
 
 export async function createResultAction(formData: FormData) {
@@ -91,7 +141,7 @@ export async function createResultAction(formData: FormData) {
     redirect(`/admin/resultados?error=${encodeURIComponent(message)}`);
   }
 
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
   const { error } = await supabase.from("results").insert({
     athlete_id,
     stage_id,
@@ -113,7 +163,7 @@ export async function deleteResultAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
   await supabase.from("results").delete().eq("id", id);
 
   revalidatePath("/");
