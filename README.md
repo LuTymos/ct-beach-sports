@@ -28,7 +28,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
    - `supabase/migrations/001_init.sql`
    - `supabase/seed.sql` (etapas 2026)
 3. Em **Authentication → Users**, crie o usuário admin (seu e-mail e o do professor).
-4. Copie **Project URL** e **anon public key** para `.env.local`.
+4. Copie **Project URL** e a chave **publishable** (ou anon JWT) para `.env.local`.
 
 ## Admin
 
