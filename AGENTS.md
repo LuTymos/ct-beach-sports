@@ -27,7 +27,7 @@ Participação = 5 pts (tipo separado, sem colocação).
 Bronzinho = colocação 1–4, mas **sempre 5 pts** (não usa a tabela Ouro/Prata/Bronze).
 Um atleta pode ter vários resultados na mesma etapa.
 
-Categoria (`misto` / `masculino` / `feminino`) e nível (`iniciante` / `intermediario` / `avancado`) ficam no resultado; o ranking geral mostra colunas por categoria e abas por nível.
+Categoria (`misto` / `masculino` / `feminino`) e nível (`iniciante` / `intermediario` / `avancado`) ficam no resultado; o ranking geral tem abas por categoria (incl. Todos) e por nível.
 
 ## Estrutura
 

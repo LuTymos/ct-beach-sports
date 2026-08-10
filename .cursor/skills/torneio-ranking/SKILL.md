@@ -18,9 +18,9 @@ Ao criar/editar resultados, ranking, etapas ou qualquer lógica de pontos.
 
 ## Ranking
 
-- Colunas por categoria: posição no ranking da categoria + pontos na categoria.
+- Abas por categoria (`?categoria=` = masculino | misto | feminino) ou **Todos** (visão com colunas por categoria + total).
 - Abas por nível (`?nivel=`).
-- Total = soma das categorias (mesma tabela de pontos).
+- Em categoria única: posição e pontos só daquela categoria.
 
 ## Casos
 

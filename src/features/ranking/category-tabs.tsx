@@ -1,33 +1,33 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
-  LEVEL_LABELS,
-  RESULT_LEVELS,
+  CATEGORY_LABELS,
+  RESULT_CATEGORIES,
   type ResultCategory,
   type ResultLevel,
 } from "@/lib/categories";
 import { buildRankingHref } from "@/features/ranking/ranking-href";
 
-type LevelTabsProps = {
-  active: ResultLevel | "todos";
-  categoria: ResultCategory | "todos";
+type CategoryTabsProps = {
+  active: ResultCategory | "todos";
+  nivel: ResultLevel | "todos";
   basePath?: string;
 };
 
-const TABS: Array<{ value: ResultLevel | "todos"; label: string }> = [
+const TABS: Array<{ value: ResultCategory | "todos"; label: string }> = [
   { value: "todos", label: "Todos" },
-  ...RESULT_LEVELS.map((level) => ({ value: level, label: LEVEL_LABELS[level] })),
+  ...RESULT_CATEGORIES.map((category) => ({
+    value: category,
+    label: CATEGORY_LABELS[category],
+  })),
 ];
 
-export function LevelTabs({ active, categoria, basePath = "/" }: LevelTabsProps) {
+export function CategoryTabs({ active, nivel, basePath = "/" }: CategoryTabsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {TABS.map((tab) => {
-        const href = buildRankingHref(basePath, {
-          categoria,
-          nivel: tab.value,
-        });
         const isActive = active === tab.value;
+        const href = buildRankingHref(basePath, { categoria: tab.value, nivel });
 
         return (
           <Link
