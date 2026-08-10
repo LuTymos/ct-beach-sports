@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 const links = [
   { href: "/", label: "Ranking" },
   { href: "/etapas", label: "Etapas" },
+  { href: "/contato", label: "Contato" },
 ];
 
 export function SiteHeader() {

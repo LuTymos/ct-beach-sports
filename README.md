@@ -29,6 +29,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
    - `supabase/migrations/002_category_level.sql`
    - `supabase/migrations/003_bronzinho.sql`
    - `supabase/migrations/004_bronzinho_placement.sql`
+   - `supabase/migrations/005_contact_tickets.sql`
    - `supabase/seed.sql` (etapas 2026)
 3. Em **Authentication → Users**, crie o usuário admin (seu e-mail e o do professor).
 4. Copie **Project URL** e a chave **publishable** (ou anon JWT) para `.env.local`.
@@ -38,6 +39,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
 - Login: `/admin/login`
 - Cadastre atletas, etapas e resultados (pontos calculados automaticamente).
 - Importar planilha da etapa: `/admin/importacao` (`atleta,categoria,nivel,serie,colocacao`).
+- Tickets de contato: `/contato` (público) e `/admin/tickets`.
 
 ## Deploy Vercel (Hobby)
 

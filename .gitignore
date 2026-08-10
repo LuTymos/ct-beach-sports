@@ -61,3 +61,6 @@ next-env.d.ts
 # supabase CLI local state (if used later)
 supabase/.temp/
 supabase/.branches/
+
+# temporary files
+tmp/
