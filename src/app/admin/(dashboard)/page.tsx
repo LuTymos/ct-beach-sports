@@ -22,6 +22,11 @@ const cards = [
     title: "Importar CSV",
     description: "Importar resultados de uma etapa a partir da planilha.",
   },
+  {
+    href: "/admin/tickets",
+    title: "Tickets",
+    description: "Mensagens do formulário de contato (público).",
+  },
 ];
 
 export default function AdminHomePage() {
