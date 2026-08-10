@@ -1,8 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import type { Athlete, AthleteStageBreakdown, RankingRow, Result, Stage } from "@/types";
+import {
+  RESULT_CATEGORIES,
+  type ResultCategory,
+  type ResultLevel,
+} from "@/lib/categories";
+import type {
+  Athlete,
+  AthleteStageBreakdown,
+  CategoryRankingRow,
+  CategoryStanding,
+  RankingRow,
+  Result,
+  Stage,
+} from "@/types";
 
-function assignPositions(rows: Omit<RankingRow, "position">[]): RankingRow[] {
+function assignPositions<T extends { totalPoints: number }>(
+  rows: T[]
+): (T & { position: number })[] {
   let lastPoints: number | null = null;
   let lastPosition = 0;
 
@@ -14,6 +29,72 @@ function assignPositions(rows: Omit<RankingRow, "position">[]): RankingRow[] {
 
     return { ...row, position: lastPosition };
   });
+}
+
+function buildCategoryRanking(
+  athletes: { id: string; name: string; team: string | null }[],
+  results: { athlete_id: string; category: string; points: number }[]
+): CategoryRankingRow[] {
+  const pointsByAthlete = new Map<string, Map<ResultCategory, number>>();
+
+  for (const result of results) {
+    const category = result.category as ResultCategory;
+    if (!RESULT_CATEGORIES.includes(category)) continue;
+
+    const byCategory = pointsByAthlete.get(result.athlete_id) ?? new Map();
+    byCategory.set(category, (byCategory.get(category) ?? 0) + result.points);
+    pointsByAthlete.set(result.athlete_id, byCategory);
+  }
+
+  const positionByCategory = new Map<ResultCategory, Map<string, number>>();
+
+  for (const category of RESULT_CATEGORIES) {
+    const ranked = athletes
+      .map((athlete) => ({
+        athleteId: athlete.id,
+        totalPoints: pointsByAthlete.get(athlete.id)?.get(category) ?? 0,
+      }))
+      .filter((row) => row.totalPoints > 0)
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    const withPosition = assignPositions(ranked);
+    positionByCategory.set(
+      category,
+      new Map(withPosition.map((row) => [row.athleteId, row.position]))
+    );
+  }
+
+  const rows = athletes
+    .map((athlete) => {
+      const byCategory = {} as Record<ResultCategory, CategoryStanding | null>;
+      let totalPoints = 0;
+
+      for (const category of RESULT_CATEGORIES) {
+        const points = pointsByAthlete.get(athlete.id)?.get(category) ?? 0;
+        if (points <= 0) {
+          byCategory[category] = null;
+          continue;
+        }
+
+        totalPoints += points;
+        byCategory[category] = {
+          points,
+          position: positionByCategory.get(category)?.get(athlete.id) ?? 0,
+        };
+      }
+
+      return {
+        athleteId: athlete.id,
+        name: athlete.name,
+        team: athlete.team,
+        byCategory,
+        totalPoints,
+      };
+    })
+    .filter((row) => row.totalPoints > 0)
+    .sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name));
+
+  return assignPositions(rows);
 }
 
 export async function getStages(): Promise<Stage[]> {
@@ -85,6 +166,44 @@ export async function getOverallRanking(): Promise<RankingRow[]> {
     .sort((a, b) => b.totalPoints - a.totalPoints || a.name.localeCompare(b.name));
 
   return assignPositions(rows);
+}
+
+export async function getCategoryRanking(options?: {
+  level?: ResultLevel | "todos";
+  stageId?: string;
+}): Promise<CategoryRankingRow[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+
+  let resultsQuery = supabase.from("results").select("athlete_id, category, points, level");
+  if (options?.stageId) {
+    resultsQuery = resultsQuery.eq("stage_id", options.stageId);
+  }
+  if (options?.level && options.level !== "todos") {
+    resultsQuery = resultsQuery.eq("level", options.level);
+  }
+
+  const [{ data: athletes, error: athletesError }, { data: results, error: resultsError }] =
+    await Promise.all([
+      supabase.from("athletes").select("id, name, team").eq("active", true),
+      resultsQuery,
+    ]);
+
+  if (athletesError) throw athletesError;
+  if (resultsError) throw resultsError;
+
+  return buildCategoryRanking(
+    (athletes ?? []).map((athlete) => ({
+      id: athlete.id as string,
+      name: athlete.name as string,
+      team: (athlete.team as string | null) ?? null,
+    })),
+    (results ?? []).map((result) => ({
+      athlete_id: result.athlete_id as string,
+      category: result.category as string,
+      points: result.points as number,
+    }))
+  );
 }
 
 export async function getStageRanking(stageId: string): Promise<RankingRow[]> {

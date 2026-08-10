@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { calculatePoints, type Placement, type Series } from "@/lib/scoring";
+import { calculatePoints, isParticipationOnly, type Placement, type Series } from "@/lib/scoring";
+import { isResultCategory, isResultLevel } from "@/lib/categories";
 import { stageFormSchema, updateStageFormSchema } from "@/features/admin/stage-schema";
 
 async function requireAdmin() {
@@ -117,19 +118,25 @@ export async function updateStageAction(formData: FormData) {
 export async function createResultAction(formData: FormData) {
   const athlete_id = String(formData.get("athlete_id") ?? "");
   const stage_id = String(formData.get("stage_id") ?? "");
+  const categoryRaw = String(formData.get("category") ?? "");
+  const levelRaw = String(formData.get("level") ?? "");
   const series = String(formData.get("series") ?? "") as Series;
   const placementRaw = String(formData.get("placement") ?? "");
 
-  if (!athlete_id || !stage_id || !series) {
+  if (!athlete_id || !stage_id || !series || !categoryRaw || !levelRaw) {
     redirect("/admin/resultados?error=Preencha+todos+os+campos");
   }
 
+  if (!isResultCategory(categoryRaw) || !isResultLevel(levelRaw)) {
+    redirect("/admin/resultados?error=Categoria+ou+nivel+invalido");
+  }
+
   const placement: Placement | null =
-    series === "participacao" || placementRaw === ""
+    isParticipationOnly(series) || placementRaw === ""
       ? null
       : (Number(placementRaw) as Placement);
 
-  if (series !== "participacao" && placement == null) {
+  if (!isParticipationOnly(series) && placement == null) {
     redirect("/admin/resultados?error=Informe+a+colocacao+1-4");
   }
 
@@ -145,6 +152,8 @@ export async function createResultAction(formData: FormData) {
   const { error } = await supabase.from("results").insert({
     athlete_id,
     stage_id,
+    category: categoryRaw,
+    level: levelRaw,
     series,
     placement,
     points,

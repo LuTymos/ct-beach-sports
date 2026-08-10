@@ -26,7 +26,9 @@ create table if not exists public.results (
   id uuid primary key default gen_random_uuid(),
   athlete_id uuid not null references public.athletes (id) on delete cascade,
   stage_id uuid not null references public.stages (id) on delete cascade,
-  series text not null check (series in ('ouro', 'prata', 'bronze', 'participacao')),
+  category text not null default 'misto' check (category in ('misto', 'masculino', 'feminino')),
+  level text not null default 'intermediario' check (level in ('iniciante', 'intermediario', 'avancado')),
+  series text not null check (series in ('ouro', 'prata', 'bronze', 'participacao', 'bronzinho')),
   placement int check (placement is null or placement between 1 and 4),
   points int not null check (points >= 0),
   created_at timestamptz not null default now(),
@@ -38,6 +40,8 @@ create table if not exists public.results (
 
 create index if not exists results_athlete_id_idx on public.results (athlete_id);
 create index if not exists results_stage_id_idx on public.results (stage_id);
+create index if not exists results_category_idx on public.results (category);
+create index if not exists results_level_idx on public.results (level);
 create index if not exists stages_sort_order_idx on public.stages (sort_order);
 
 alter table public.athletes enable row level security;

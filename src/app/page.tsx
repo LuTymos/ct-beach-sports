@@ -1,11 +1,24 @@
-import { RankingTable } from "@/features/ranking/ranking-table";
-import { getOverallRanking } from "@/features/ranking/queries";
+import { CategoryRankingTable } from "@/features/ranking/category-ranking-table";
+import { LevelTabs } from "@/features/ranking/level-tabs";
+import { getCategoryRanking } from "@/features/ranking/queries";
+import { isResultLevel, LEVEL_LABELS, type ResultLevel } from "@/lib/categories";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default async function HomePage() {
+type PageProps = {
+  searchParams: Promise<{ nivel?: string }>;
+};
+
+function resolveLevel(value?: string): ResultLevel | "todos" {
+  if (!value || value === "todos") return "todos";
+  return isResultLevel(value) ? value : "todos";
+}
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const { nivel } = await searchParams;
+  const level = resolveLevel(nivel);
   const configured = isSupabaseConfigured();
-  const ranking = configured ? await getOverallRanking() : [];
+  const ranking = configured ? await getCategoryRanking({ level }) : [];
 
   return (
     <div className="space-y-6">
@@ -15,7 +28,9 @@ export default async function HomePage() {
         </p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Ranking geral</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Soma de pontos de todas as etapas do torneio dos alunos do CT Beach Sports.
+          Colunas por categoria (posição no ranking da categoria + pontos). Use as abas para
+          filtrar por nível.
+          {level !== "todos" ? ` Exibindo: ${LEVEL_LABELS[level]}.` : ""}
         </p>
       </div>
 
@@ -29,7 +44,8 @@ export default async function HomePage() {
         </Alert>
       )}
 
-      <RankingTable rows={ranking} />
+      <LevelTabs active={level} />
+      <CategoryRankingTable rows={ranking} />
     </div>
   );
 }
