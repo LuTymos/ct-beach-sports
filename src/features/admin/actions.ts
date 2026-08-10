@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculatePoints, isParticipationOnly, type Placement, type Series } from "@/lib/scoring";
 import { isResultCategory, isResultLevel } from "@/lib/categories";
+import { parseImportCsv } from "@/features/admin/import-csv";
 import { stageFormSchema, updateStageFormSchema } from "@/features/admin/stage-schema";
+
+const MAX_IMPORT_BYTES = 512 * 1024;
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -178,4 +181,167 @@ export async function deleteResultAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin/resultados");
   redirect("/admin/resultados");
+}
+
+export async function importStageResultsAction(formData: FormData) {
+  const stage_id = String(formData.get("stage_id") ?? "").trim();
+  const file = formData.get("file");
+
+  if (!stage_id) {
+    redirect("/admin/importacao?error=" + encodeURIComponent("Selecione a etapa"));
+  }
+
+  if (!(file instanceof File) || file.size === 0) {
+    redirect("/admin/importacao?error=" + encodeURIComponent("Envie um arquivo CSV"));
+  }
+
+  if (file.size > MAX_IMPORT_BYTES) {
+    redirect(
+      "/admin/importacao?error=" + encodeURIComponent("CSV muito grande (max 512 KB)")
+    );
+  }
+
+  const text = await file.text();
+  const parsed = parseImportCsv(text);
+  if (!parsed.ok) {
+    const preview = parsed.errors.slice(0, 8).join(" | ");
+    const extra =
+      parsed.errors.length > 8 ? ` (+${parsed.errors.length - 8} erros)` : "";
+    redirect(`/admin/importacao?error=${encodeURIComponent(preview + extra)}`);
+  }
+
+  const supabase = await requireAdmin();
+
+  const { data: stage, error: stageError } = await supabase
+    .from("stages")
+    .select("id")
+    .eq("id", stage_id)
+    .maybeSingle();
+
+  if (stageError || !stage) {
+    redirect("/admin/importacao?error=" + encodeURIComponent("Etapa nao encontrada"));
+  }
+
+  const { data: existingAthletes, error: athletesError } = await supabase
+    .from("athletes")
+    .select("id, name");
+
+  if (athletesError) {
+    redirect(`/admin/importacao?error=${encodeURIComponent(athletesError.message)}`);
+  }
+
+  const byName = new Map<string, string[]>();
+  for (const athlete of existingAthletes ?? []) {
+    const list = byName.get(athlete.name) ?? [];
+    list.push(athlete.id);
+    byName.set(athlete.name, list);
+  }
+
+  const neededNames = [...new Set(parsed.rows.map((row) => row.athlete))];
+  let athletesCreated = 0;
+
+  for (const name of neededNames) {
+    const matches = byName.get(name) ?? [];
+    if (matches.length > 1) {
+      redirect(
+        "/admin/importacao?error=" +
+          encodeURIComponent(
+            `Nome duplicado no cadastro: "${name}". Unifique antes de importar.`
+          )
+      );
+    }
+    if (matches.length === 1) continue;
+
+    const { data: created, error } = await supabase
+      .from("athletes")
+      .insert({ name })
+      .select("id, name")
+      .single();
+
+    if (error || !created) {
+      redirect(
+        `/admin/importacao?error=${encodeURIComponent(error?.message ?? "Falha ao criar atleta")}`
+      );
+    }
+
+    byName.set(created.name, [created.id]);
+    athletesCreated += 1;
+  }
+
+  const { data: existingResults, error: resultsError } = await supabase
+    .from("results")
+    .select("athlete_id, category, level, series, placement")
+    .eq("stage_id", stage_id);
+
+  if (resultsError) {
+    redirect(`/admin/importacao?error=${encodeURIComponent(resultsError.message)}`);
+  }
+
+  const existingKeys = new Set(
+    (existingResults ?? []).map(
+      (result) =>
+        `${result.athlete_id}|${result.category}|${result.level}|${result.series}|${result.placement ?? ""}`
+    )
+  );
+
+  const toInsert: {
+    athlete_id: string;
+    stage_id: string;
+    category: string;
+    level: string;
+    series: string;
+    placement: number | null;
+    points: number;
+  }[] = [];
+  let skipped = 0;
+
+  for (const row of parsed.rows) {
+    const athleteId = byName.get(row.athlete)?.[0];
+    if (!athleteId) {
+      redirect(
+        "/admin/importacao?error=" +
+          encodeURIComponent(`Atleta nao resolvido: ${row.athlete}`)
+      );
+    }
+
+    const key = `${athleteId}|${row.category}|${row.level}|${row.series}|${row.placement ?? ""}`;
+    if (existingKeys.has(key)) {
+      skipped += 1;
+      continue;
+    }
+
+    existingKeys.add(key);
+    toInsert.push({
+      athlete_id: athleteId,
+      stage_id,
+      category: row.category,
+      level: row.level,
+      series: row.series,
+      placement: row.placement,
+      points: row.points,
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const { error: insertError } = await supabase.from("results").insert(toInsert);
+    if (insertError) {
+      redirect(`/admin/importacao?error=${encodeURIComponent(insertError.message)}`);
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/etapas");
+  revalidatePath(`/etapas/${stage_id}`);
+  revalidatePath("/admin/resultados");
+  revalidatePath("/admin/atletas");
+  revalidatePath("/admin/importacao");
+
+  const params = new URLSearchParams({
+    ok: "1",
+    results: String(toInsert.length),
+    athletes: String(athletesCreated),
+    skipped: String(skipped),
+    stage: stage_id,
+  });
+  redirect(`/admin/importacao?${params.toString()}`);
 }

@@ -29,6 +29,19 @@ Ao criar/editar resultados, ranking, etapas ou qualquer lógica de pontos.
 - Participação: 5 pts sem pódio.
 - Bronzinho: registra 1º–4º, mas vale sempre 5 pts.
 
+## Import CSV
+
+Admin `/admin/importacao`: uma planilha por etapa.
+
+```csv
+atleta,categoria,nivel,serie,colocacao
+```
+
+- Match de atleta por **nome exato** (trim); cria se não existir.
+- Pontos só via `calculatePoints`.
+- Duplicata na mesma etapa (atleta+cat+nível+série+colocação) → ignora.
+- Aceita `,` ou `;` no CSV.
+
 ## Referência
 
-Ver `src/lib/scoring.ts`, `src/lib/categories.ts` e `src/features/admin/actions.ts`.
+Ver `src/lib/scoring.ts`, `src/lib/categories.ts`, `src/features/admin/import-csv.ts` e `src/features/admin/actions.ts`.

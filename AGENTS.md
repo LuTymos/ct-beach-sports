@@ -42,9 +42,9 @@ supabase/migrations/     SQL
 
 ## MVP vs roadmap
 
-**MVP:** ranking geral, por etapa, ficha do atleta, admin CRUD.
+**MVP:** ranking geral, por etapa, ficha do atleta, admin CRUD, import CSV por etapa.
 
-**Depois:** inscrição em etapas, import da planilha, links de auditoria preenchidos.
+**Depois:** inscrição em etapas, links de auditoria preenchidos.
 
 ## Next.js notes
 

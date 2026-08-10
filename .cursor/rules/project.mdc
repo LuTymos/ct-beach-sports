@@ -11,6 +11,7 @@ alwaysApply: true
 - Docs Next da versão instalada: `node_modules/next/dist/docs/`.
 - Não inventar features fora do pedido (inscrição, etc. são roadmap).
 - Pontuação apenas via `src/lib/scoring.ts`.
+- Import CSV: `/admin/importacao` — match por nome exato; pontos via `scoring.ts`.
 - Público lê; só admin autenticado escreve.
 - Preferir Server Components; `"use client"` só quando necessário.
 - Commits/push GitHub só se o usuário pedir explicitamente.
