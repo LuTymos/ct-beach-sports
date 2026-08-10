@@ -26,6 +26,9 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
 1. Crie um projeto em [supabase.com](https://supabase.com).
 2. Em **SQL Editor**, rode:
    - `supabase/migrations/001_init.sql`
+   - `supabase/migrations/002_category_level.sql`
+   - `supabase/migrations/003_bronzinho.sql`
+   - `supabase/migrations/004_bronzinho_placement.sql`
    - `supabase/seed.sql` (etapas 2026)
 3. Em **Authentication → Users**, crie o usuário admin (seu e-mail e o do professor).
 4. Copie **Project URL** e a chave **publishable** (ou anon JWT) para `.env.local`.

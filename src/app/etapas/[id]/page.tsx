@@ -4,19 +4,29 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RankingTable } from "@/features/ranking/ranking-table";
-import { getStageById, getStageRanking } from "@/features/ranking/queries";
+import { CategoryRankingTable } from "@/features/ranking/category-ranking-table";
+import { LevelTabs } from "@/features/ranking/level-tabs";
+import { getCategoryRanking, getStageById } from "@/features/ranking/queries";
+import { isResultLevel, type ResultLevel } from "@/lib/categories";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ nivel?: string }>;
 };
 
-export default async function StageDetailPage({ params }: PageProps) {
+function resolveLevel(value?: string): ResultLevel | "todos" {
+  if (!value || value === "todos") return "todos";
+  return isResultLevel(value) ? value : "todos";
+}
+
+export default async function StageDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { nivel } = await searchParams;
+  const level = resolveLevel(nivel);
   const stage = await getStageById(id);
   if (!stage) notFound();
 
-  const ranking = await getStageRanking(id);
+  const ranking = await getCategoryRanking({ stageId: id, level });
 
   return (
     <div className="space-y-6">
@@ -46,7 +56,11 @@ export default async function StageDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      <RankingTable rows={ranking} emptyMessage="Nenhum resultado nesta etapa ainda." />
+      <LevelTabs active={level} basePath={`/etapas/${id}`} />
+      <CategoryRankingTable
+        rows={ranking}
+        emptyMessage="Nenhum resultado nesta etapa ainda."
+      />
     </div>
   );
 }

@@ -23,8 +23,11 @@ Público só consulta; admin (professor / você) cadastra atletas, etapas e resu
 | Prata | 50 | 40 | 30 | 20 |
 | Bronze | 30 | 20 | 10 | 5 |
 
-Participação = 5 pts (tipo separado, não soma em cima do pódio).
+Participação = 5 pts (tipo separado, sem colocação).
+Bronzinho = colocação 1–4, mas **sempre 5 pts** (não usa a tabela Ouro/Prata/Bronze).
 Um atleta pode ter vários resultados na mesma etapa.
+
+Categoria (`misto` / `masculino` / `feminino`) e nível (`iniciante` / `intermediario` / `avancado`) ficam no resultado; o ranking geral mostra colunas por categoria e abas por nível.
 
 ## Estrutura
 

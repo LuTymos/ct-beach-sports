@@ -3,6 +3,14 @@ import {
   deleteResultAction,
 } from "@/features/admin/actions";
 import { getAllResults, getAthletes, getStages } from "@/features/ranking/queries";
+import {
+  CATEGORY_LABELS,
+  LEVEL_LABELS,
+  RESULT_CATEGORIES,
+  RESULT_LEVELS,
+  type ResultCategory,
+  type ResultLevel,
+} from "@/lib/categories";
 import { SERIES_LABELS, type Series } from "@/lib/scoring";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +46,8 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Resultados</h1>
       <p className="text-sm text-muted-foreground">
-        Um atleta pode ter vários resultados na mesma etapa. Participação = 5 pts (sem pódio).
+        Informe categoria e nível. Um atleta pode ter vários resultados na mesma etapa.
+        Participação = 5 pts sem colocação. Bronzinho = colocação 1–4, sempre 5 pts.
       </p>
 
       {error && (
@@ -76,6 +85,38 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
               </select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <select
+                id="category"
+                name="category"
+                required
+                className={selectClassName}
+                defaultValue="misto"
+              >
+                {RESULT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {CATEGORY_LABELS[category]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">Nível</Label>
+              <select
+                id="level"
+                name="level"
+                required
+                className={selectClassName}
+                defaultValue="intermediario"
+              >
+                {RESULT_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {LEVEL_LABELS[level]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="series">Série</Label>
               <select id="series" name="series" required className={selectClassName} defaultValue="ouro">
                 {(Object.keys(SERIES_LABELS) as Series[]).map((series) => (
@@ -86,13 +127,13 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="placement">Colocação (1–4; vazio se participação)</Label>
+              <Label htmlFor="placement">Colocação (1–4; vazio só se participação)</Label>
               <select id="placement" name="placement" className={selectClassName} defaultValue="1">
                 <option value="1">1º</option>
                 <option value="2">2º</option>
                 <option value="3">3º</option>
                 <option value="4">4º</option>
-                <option value="">— (participação)</option>
+                <option value="">— (só participação)</option>
               </select>
             </div>
             <div className="sm:col-span-2">
@@ -108,6 +149,8 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
             <TableRow>
               <TableHead>Atleta</TableHead>
               <TableHead>Etapa</TableHead>
+              <TableHead>Cat.</TableHead>
+              <TableHead>Nível</TableHead>
               <TableHead>Série</TableHead>
               <TableHead>Col.</TableHead>
               <TableHead className="text-right">Pts</TableHead>
@@ -118,10 +161,14 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
             {results.map((result) => {
               const athlete = result.athletes as { name?: string } | null;
               const stage = result.stages as { title?: string } | null;
+              const category = result.category as ResultCategory | undefined;
+              const level = result.level as ResultLevel | undefined;
               return (
                 <TableRow key={result.id as string}>
                   <TableCell>{athlete?.name ?? "—"}</TableCell>
                   <TableCell>{stage?.title ?? "—"}</TableCell>
+                  <TableCell>{category ? CATEGORY_LABELS[category] : "—"}</TableCell>
+                  <TableCell>{level ? LEVEL_LABELS[level] : "—"}</TableCell>
                   <TableCell>{result.series as string}</TableCell>
                   <TableCell>{(result.placement as number | null) ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{result.points as number}</TableCell>
