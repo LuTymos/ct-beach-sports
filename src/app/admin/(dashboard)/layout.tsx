@@ -7,6 +7,7 @@ const adminLinks = [
   { href: "/admin/atletas", label: "Atletas" },
   { href: "/admin/etapas", label: "Etapas" },
   { href: "/admin/resultados", label: "Resultados" },
+  { href: "/admin/importacao", label: "Importar" },
 ];
 
 export default function AdminDashboardLayout({

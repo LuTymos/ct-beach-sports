@@ -37,6 +37,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
 
 - Login: `/admin/login`
 - Cadastre atletas, etapas e resultados (pontos calculados automaticamente).
+- Importar planilha da etapa: `/admin/importacao` (`atleta,categoria,nivel,serie,colocacao`).
 
 ## Deploy Vercel (Hobby)
 

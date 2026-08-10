@@ -17,6 +17,11 @@ const cards = [
     title: "Resultados",
     description: "Lançar série + colocação; pontos calculados automaticamente.",
   },
+  {
+    href: "/admin/importacao",
+    title: "Importar CSV",
+    description: "Importar resultados de uma etapa a partir da planilha.",
+  },
 ];
 
 export default function AdminHomePage() {
@@ -26,7 +31,7 @@ export default function AdminHomePage() {
         <h1 className="text-3xl font-semibold tracking-tight">Admin</h1>
         <p className="text-muted-foreground">Área restrita — CT Beach Sports</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <Link key={card.href} href={card.href}>
             <Card className="h-full transition hover:border-primary/40">
