@@ -46,7 +46,9 @@ export default async function HomePage({ searchParams }: PageProps) {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
           Temporada 2026
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Ranking geral</h1>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Ranking geral do torneio
+        </h1>
         <p className="max-w-2xl text-muted-foreground">
           Use as abas para filtrar por categoria e nível.
           {` Exibindo: ${categoryLabel}`}
@@ -58,8 +60,9 @@ export default async function HomePage({ searchParams }: PageProps) {
         <Alert>
           <AlertTitle>Supabase ainda não configurado</AlertTitle>
           <AlertDescription>
-            Copie <code>.env.example</code> para <code>.env.local</code>, preencha as chaves e
-            rode as migrations em <code>supabase/migrations</code>.
+            Copie <code>.env.example</code> para <code>.env.local</code>,
+            preencha as chaves e rode as migrations em{" "}
+            <code>supabase/migrations</code>.
           </AlertDescription>
         </Alert>
       )}
