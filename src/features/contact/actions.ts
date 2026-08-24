@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { contactTicketSchema } from "@/features/contact/schema";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/supabase/is-admin";
 
 export async function submitContactTicketAction(formData: FormData) {
   const parsed = contactTicketSchema.safeParse({
@@ -40,7 +41,7 @@ export async function markTicketDoneAction(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
+  if (!isAdminUser(user)) redirect("/admin/login");
 
   const { error } = await supabase
     .from("contact_tickets")
