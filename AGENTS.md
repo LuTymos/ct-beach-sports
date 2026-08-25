@@ -34,7 +34,7 @@ Categoria (`misto` / `masculino` / `feminino`) e nível (`iniciante` / `intermed
 ```
 src/app/                 rotas públicas + admin
 src/components/ui/       shadcn
-src/features/            ranking, admin
+src/features/            ranking, admin, contact, entries
 src/lib/scoring.ts       pontuação
 src/lib/supabase/        clients + middleware
 supabase/migrations/     SQL
@@ -44,7 +44,7 @@ supabase/migrations/     SQL
 
 **MVP:** ranking geral, por etapa, ficha do atleta, admin CRUD, import CSV por etapa.
 
-**Depois:** inscrição em etapas, links de auditoria preenchidos.
+**Roadmap:** ver [`ROADMAP.md`](./ROADMAP.md) (institucional → inscrições → perfil → configs → chaveamento → anúncios; UI/UX contínua via Gira).
 
 ## Next.js notes
 

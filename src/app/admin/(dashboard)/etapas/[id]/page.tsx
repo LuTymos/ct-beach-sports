@@ -29,9 +29,14 @@ export default async function AdminEditStagePage({ params, searchParams }: PageP
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">Editar etapa</h1>
-        <Button asChild variant="outline">
-          <Link href="/admin/etapas">Voltar</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="secondary">
+            <Link href={`/admin/etapas/${id}/inscricoes`}>Inscrições</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/admin/etapas">Voltar</Link>
+          </Button>
+        </div>
       </div>
 
       {error && (

@@ -103,9 +103,14 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
                 <TableCell>{stage.location ?? "—"}</TableCell>
                 <TableCell>{stage.status === "completed" ? "Realizada" : "Agendada"}</TableCell>
                 <TableCell className="text-right">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/etapas/${stage.id}`}>Editar</Link>
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/admin/etapas/${stage.id}/inscricoes`}>Inscrições</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/admin/etapas/${stage.id}`}>Editar</Link>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

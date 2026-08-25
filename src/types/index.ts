@@ -64,3 +64,7 @@ export type AthleteStageBreakdown = {
   stageDate: string;
   points: number;
 };
+
+export type StageEntrySource = "admin" | "athlete";
+
+export type StageEntryPodiumSeries = "ouro" | "prata" | "bronze" | "bronzinho";
