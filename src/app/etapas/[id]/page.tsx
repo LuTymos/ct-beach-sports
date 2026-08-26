@@ -10,6 +10,8 @@ import { LevelTabs } from "@/features/ranking/level-tabs";
 import { RankingTable } from "@/features/ranking/ranking-table";
 import { getCategoryRanking, getStageById } from "@/features/ranking/queries";
 import { toSingleCategoryRanking } from "@/features/ranking/to-single-category-ranking";
+import { getStageEntriesPublic } from "@/features/entries/queries";
+import { StageEntriesPublicList } from "@/features/entries/stage-entries-public-list";
 import {
   isResultCategory,
   isResultLevel,
@@ -40,7 +42,10 @@ export default async function StageDetailPage({ params, searchParams }: PageProp
   const stage = await getStageById(id);
   if (!stage) notFound();
 
-  const ranking = await getCategoryRanking({ stageId: id, level });
+  const [ranking, entries] = await Promise.all([
+    getCategoryRanking({ stageId: id, level }),
+    getStageEntriesPublic(id),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -70,22 +75,35 @@ export default async function StageDetailPage({ params, searchParams }: PageProp
         )}
       </div>
 
-      <div className="space-y-3">
-        <CategoryTabs active={categoria} nivel={level} basePath={`/etapas/${id}`} />
-        <LevelTabs active={level} categoria={categoria} basePath={`/etapas/${id}`} />
-      </div>
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Inscritos</h2>
+          <p className="text-sm text-muted-foreground">
+            Duplas por categoria e nível (sem informação de pagamento).
+          </p>
+        </div>
+        <StageEntriesPublicList entries={entries} />
+      </section>
 
-      {categoria === "todos" ? (
-        <CategoryRankingTable
-          rows={ranking}
-          emptyMessage="Nenhum resultado nesta etapa ainda."
-        />
-      ) : (
-        <RankingTable
-          rows={toSingleCategoryRanking(ranking, categoria)}
-          emptyMessage="Nenhum resultado nesta etapa ainda."
-        />
-      )}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold tracking-tight">Ranking da etapa</h2>
+        <div className="space-y-3">
+          <CategoryTabs active={categoria} nivel={level} basePath={`/etapas/${id}`} />
+          <LevelTabs active={level} categoria={categoria} basePath={`/etapas/${id}`} />
+        </div>
+
+        {categoria === "todos" ? (
+          <CategoryRankingTable
+            rows={ranking}
+            emptyMessage="Nenhum resultado nesta etapa ainda."
+          />
+        ) : (
+          <RankingTable
+            rows={toSingleCategoryRanking(ranking, categoria)}
+            emptyMessage="Nenhum resultado nesta etapa ainda."
+          />
+        )}
+      </section>
     </div>
   );
 }

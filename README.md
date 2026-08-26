@@ -31,6 +31,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
    - `supabase/migrations/004_bronzinho_placement.sql`
    - `supabase/migrations/005_contact_tickets.sql`
    - `supabase/migrations/006_rls_admin_policies.sql`
+   - `supabase/migrations/007_stage_entries.sql`
    - `supabase/seed.sql` (etapas 2026)
 3. Em **Authentication → Users**, crie o usuário admin (seu e-mail e o do professor).
 4. Promova o usuário a admin no **SQL Editor** (claim em `app_metadata`, não em `user_metadata`), depois faça logout/login:
@@ -48,6 +49,7 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
 - Cadastre atletas, etapas e resultados (pontos calculados automaticamente).
 - Importar planilha da etapa: `/admin/importacao` (`atleta,categoria,nivel,serie,colocacao`).
 - Tickets de contato: `/contato` (público) e `/admin/tickets`.
+- Inscrições por etapa (duplas): `/admin/etapas/[id]/inscricoes` (pagamento só admin); lista pública em `/etapas/[id]`.
 
 ## Deploy Vercel (Hobby)
 

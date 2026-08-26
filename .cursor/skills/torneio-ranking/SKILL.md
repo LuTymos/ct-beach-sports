@@ -16,6 +16,19 @@ Ao criar/editar resultados, ranking, etapas ou qualquer lógica de pontos.
 3. Escolher série (`ouro` / `prata` / `bronze`) + colocação 1–4, **ou** `bronzinho` + colocação 1–4 (sempre 5 pts), **ou** `participacao` (5 pts, sem colocação).
 4. Calcular com `calculatePoints(series, placement)` e gravar `points`.
 
+## Inscrições (duplas)
+
+Admin `/admin/etapas/[id]/inscricoes`:
+
+1. Inscrever dupla (2 atletas + categoria + nível). Unique `(stage, category, athlete)`.
+2. Toggle `paid` por atleta (só admin vê).
+3. Marcar pódio → 2 `results` via `calculatePoints`.
+4. Fechar etapa → participação para inscritos sem pódio + `stages.status = completed`.
+
+Público em `/etapas/[id]` vê duplas sem pagamento.
+
+Código: `src/features/entries/`.
+
 ## Ranking
 
 - Abas por categoria (`?categoria=` = masculino | misto | feminino) ou **Todos** (visão com colunas por categoria + total).
@@ -44,4 +57,4 @@ atleta,categoria,nivel,serie,colocacao
 
 ## Referência
 
-Ver `src/lib/scoring.ts`, `src/lib/categories.ts`, `src/features/admin/import-csv.ts` e `src/features/admin/actions.ts`.
+Ver `src/lib/scoring.ts`, `src/lib/categories.ts`, `src/features/entries/`, `src/features/admin/import-csv.ts` e `src/features/admin/actions.ts`.

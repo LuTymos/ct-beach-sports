@@ -22,6 +22,5 @@ alwaysApply: false
 ## Schema / RLS
 
 - Migrations em `supabase/migrations/`; seed em `supabase/seed.sql`.
-- Tabelas MVP: `athletes`, `stages`, `results`.
-- RLS: SELECT público em ranking; INSERT/UPDATE/DELETE só `authenticated` com `app_metadata.role = 'admin'` (`public.is_admin()`). Tickets: insert público com `status = 'open'`; leitura/update só admin.
-- Sem tabela `registrations` no MVP.
+- Tabelas MVP: `athletes`, `stages`, `results`, `contact_tickets`, `stage_entries`, `stage_entry_members`.
+- RLS: SELECT público em ranking/inscrições; INSERT/UPDATE/DELETE só `authenticated` com `app_metadata.role = 'admin'` (`public.is_admin()`). Tickets: insert público com `status = 'open'`; leitura/update só admin. Pagamento (`paid`) só aparece nas queries admin.
