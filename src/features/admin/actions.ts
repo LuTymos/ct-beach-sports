@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/supabase/is-admin";
 import { calculatePoints, isParticipationOnly, type Placement, type Series } from "@/lib/scoring";
 import { isResultCategory, isResultLevel } from "@/lib/categories";
 import { parseImportCsv } from "@/features/admin/import-csv";
@@ -17,7 +18,7 @@ async function requireAdmin() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error || !user || !isAdminUser(user)) {
     redirect("/admin/login");
   }
 
@@ -53,6 +54,14 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     redirect(`/admin/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminUser(user)) {
+    await supabase.auth.signOut();
+    redirect("/admin/login?error=" + encodeURIComponent("Sem permissão de admin"));
   }
 
   redirect("/admin");

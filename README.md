@@ -30,9 +30,17 @@ Abra no Chrome do Windows: [http://localhost:3000](http://localhost:3000)
    - `supabase/migrations/003_bronzinho.sql`
    - `supabase/migrations/004_bronzinho_placement.sql`
    - `supabase/migrations/005_contact_tickets.sql`
+   - `supabase/migrations/006_rls_admin_policies.sql`
    - `supabase/seed.sql` (etapas 2026)
 3. Em **Authentication → Users**, crie o usuário admin (seu e-mail e o do professor).
-4. Copie **Project URL** e a chave **publishable** (ou anon JWT) para `.env.local`.
+4. Promova o usuário a admin no **SQL Editor** (claim em `app_metadata`, não em `user_metadata`), depois faça logout/login:
+   ```sql
+   update auth.users
+   set raw_app_meta_data =
+     coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'::jsonb
+   where email in ('SEU_EMAIL');
+   ```
+5. Copie **Project URL** e a chave **publishable** (ou anon JWT) para `.env.local`.
 
 ## Admin
 

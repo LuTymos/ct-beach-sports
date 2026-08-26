@@ -23,5 +23,5 @@ alwaysApply: false
 
 - Migrations em `supabase/migrations/`; seed em `supabase/seed.sql`.
 - Tabelas MVP: `athletes`, `stages`, `results`.
-- RLS: SELECT público; INSERT/UPDATE/DELETE só `authenticated`.
+- RLS: SELECT público em ranking; INSERT/UPDATE/DELETE só `authenticated` com `app_metadata.role = 'admin'` (`public.is_admin()`). Tickets: insert público com `status = 'open'`; leitura/update só admin.
 - Sem tabela `registrations` no MVP.

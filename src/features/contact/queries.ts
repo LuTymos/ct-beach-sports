@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/supabase/is-admin";
 import type { TicketReason } from "@/features/contact/reasons";
 
 export type ContactTicket = {
@@ -12,6 +13,11 @@ export type ContactTicket = {
 
 export async function getContactTickets(): Promise<ContactTicket[]> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminUser(user)) return [];
+
   const { data, error } = await supabase
     .from("contact_tickets")
     .select("id, name, reason, message, status, created_at")
