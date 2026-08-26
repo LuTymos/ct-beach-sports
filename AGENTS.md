@@ -42,9 +42,9 @@ supabase/migrations/     SQL
 
 ## MVP vs roadmap
 
-**MVP:** ranking geral, por etapa, ficha do atleta, admin CRUD, import CSV por etapa.
+**MVP (entregue):** ranking geral/por etapa, ficha do atleta, admin CRUD, import CSV, tickets, inscrição de duplas (admin).
 
-**Roadmap:** ver [`ROADMAP.md`](./ROADMAP.md) (institucional → inscrições → perfil → configs → chaveamento → anúncios; UI/UX contínua via Gira).
+**Roadmap / backlog:** Trello do projeto (board CT Beach Sports) — institucional, perfil rico, configs, chaveamento, anúncios; UI/UX contínua via Gira.
 
 ## Next.js notes
 

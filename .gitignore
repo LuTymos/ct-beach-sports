@@ -64,3 +64,10 @@ supabase/.branches/
 
 # temporary files
 tmp/
+# product backlog / plans (use Trello; keep local only)
+ROADMAP.md
+docs/
+*.plan.md
+
+# Cursor / agent tooling — keep project rules & skills-lock; ignore vendored skills
+.agents/
