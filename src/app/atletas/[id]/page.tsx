@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { AthleteProfileEditor } from "@/features/account/athlete-profile-editor";
 import { athleteLogoutAction } from "@/features/account/actions";
 import { getAthleteBreakdown, getAthleteById } from "@/features/ranking/queries";
-import { isOwnAthleteProfile } from "@/lib/supabase/auth";
+import { getSessionUser, isOwnAthleteProfile } from "@/lib/supabase/auth";
 import { CATEGORY_LABELS, LEVEL_LABELS } from "@/lib/categories";
 import { formatResultLabel, type Placement, type Series } from "@/lib/scoring";
 
@@ -30,6 +30,7 @@ export default async function AthletePage({ params, searchParams }: PageProps) {
   if (!athlete) notFound();
 
   const isOwner = await isOwnAthleteProfile(id);
+  const sessionUser = isOwner ? await getSessionUser() : null;
   const { total, byStage, results } = await getAthleteBreakdown(id);
 
   return (
@@ -62,7 +63,9 @@ export default async function AthletePage({ params, searchParams }: PageProps) {
         </Alert>
       ) : null}
 
-      {isOwner ? <AthleteProfileEditor athlete={athlete} /> : null}
+      {isOwner ? (
+        <AthleteProfileEditor athlete={athlete} accountEmail={sessionUser?.email ?? null} />
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Por etapa</h2>

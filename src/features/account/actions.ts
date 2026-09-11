@@ -1,11 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
 import { isAdminUser } from "@/lib/supabase/is-admin";
 import { getLinkedAthlete, getSessionUser } from "@/lib/supabase/auth";
+
+/** HttpOnly flash cookie — invite magic link must not appear in the URL. */
+export const INVITE_LINK_COOKIE = "admin_athlete_invite_link";
+
+export async function peekInviteLinkFlash(): Promise<string | null> {
+  const jar = await cookies();
+  return jar.get(INVITE_LINK_COOKIE)?.value ?? null;
+}
+
+async function setInviteLinkFlash(link: string) {
+  const jar = await cookies();
+  jar.set(INVITE_LINK_COOKIE, link, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/admin",
+    maxAge: 60 * 5,
+  });
+}
 
 function athletePath(id: string, query?: string) {
   return query ? `/atletas/${id}?${query}` : `/atletas/${id}`;
@@ -200,14 +220,12 @@ async function generateInviteLinkAndBind(opts: {
   revalidatePath("/admin/atletas");
   revalidatePath(`/atletas/${athleteId}`);
 
+  await setInviteLinkFlash(data.properties.action_link);
+
   const prefix =
     note ??
     "Link gerado (sem e-mail — limite do Supabase). Abra em janela anônima:";
-  redirect(
-    `/admin/atletas?ok=${encodeURIComponent(prefix)}&invite_link=${encodeURIComponent(
-      data.properties.action_link
-    )}`
-  );
+  redirect(`/admin/atletas?ok=${encodeURIComponent(prefix)}`);
 }
 
 /** Invite or re-send: creates Auth user if needed, always sends a fresh e-mail when possible. */

@@ -20,12 +20,16 @@ export async function getLinkedAthlete(): Promise<Athlete | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("athletes")
-    .select("*")
+    .select("id, name, team, active, created_at, user_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (error) throw error;
-  return (data as Athlete | null) ?? null;
+  if (!data) return null;
+  return {
+    ...(data as Omit<Athlete, "email">),
+    email: user.email ?? null,
+  };
 }
 
 export async function isOwnAthleteProfile(athleteId: string): Promise<boolean> {

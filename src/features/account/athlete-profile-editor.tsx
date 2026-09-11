@@ -7,9 +7,10 @@ import type { Athlete } from "@/types";
 
 type AthleteProfileEditorProps = {
   athlete: Athlete;
+  accountEmail?: string | null;
 };
 
-export function AthleteProfileEditor({ athlete }: AthleteProfileEditorProps) {
+export function AthleteProfileEditor({ athlete, accountEmail }: AthleteProfileEditorProps) {
   return (
     <Card>
       <CardHeader>
@@ -35,9 +36,9 @@ export function AthleteProfileEditor({ athlete }: AthleteProfileEditorProps) {
               maxLength={120}
             />
           </div>
-          {athlete.email ? (
+          {accountEmail ? (
             <p className="text-sm text-muted-foreground sm:col-span-2">
-              E-mail da conta: <span className="font-medium text-foreground">{athlete.email}</span>
+              E-mail da conta: <span className="font-medium text-foreground">{accountEmail}</span>
             </p>
           ) : null}
           <div className="sm:col-span-2">

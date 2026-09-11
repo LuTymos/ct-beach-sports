@@ -2,6 +2,7 @@ import { createAthleteAction } from "@/features/admin/actions";
 import {
   generateAthleteInviteLinkAction,
   inviteAthleteAction,
+  peekInviteLinkFlash,
   unlinkAthleteAction,
 } from "@/features/account/actions";
 import { getAthletes } from "@/features/ranking/queries";
@@ -23,13 +24,14 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 type PageProps = {
-  searchParams: Promise<{ error?: string; ok?: string; invite_link?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 };
 
 export default async function AdminAthletesPage({ searchParams }: PageProps) {
-  const { error, ok, invite_link: inviteLink } = await searchParams;
+  const { error, ok } = await searchParams;
   const athletes = await getAthletes();
   const canInvite = hasServiceRoleKey();
+  const inviteLink = await peekInviteLinkFlash();
 
   return (
     <div className="space-y-6">
