@@ -32,10 +32,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (
-    request.nextUrl.pathname.startsWith("/admin") &&
-    !request.nextUrl.pathname.startsWith("/admin/login")
-  ) {
+  const path = request.nextUrl.pathname;
+
+  if (path.startsWith("/admin") && !path.startsWith("/admin/login")) {
     if (!user || !isAdminUser(user)) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/admin/login";
@@ -43,7 +42,21 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (request.nextUrl.pathname === "/admin/login" && isAdminUser(user)) {
+  if (path === "/admin/login" && isAdminUser(user)) {
+    const dashboard = request.nextUrl.clone();
+    dashboard.pathname = "/admin";
+    return NextResponse.redirect(dashboard);
+  }
+
+  // Logged-in athlete on login page → own profile (or /conta)
+  // Allow /conta/definir-senha so invite flow can set password.
+  if (path === "/conta/login" && user && !isAdminUser(user)) {
+    const conta = request.nextUrl.clone();
+    conta.pathname = "/conta";
+    return NextResponse.redirect(conta);
+  }
+
+  if ((path === "/conta/login" || path === "/conta/definir-senha") && isAdminUser(user)) {
     const dashboard = request.nextUrl.clone();
     dashboard.pathname = "/admin";
     return NextResponse.redirect(dashboard);

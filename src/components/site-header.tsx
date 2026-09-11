@@ -23,6 +23,9 @@ export function SiteHeader() {
               <Link href={link.href}>{link.label}</Link>
             </Button>
           ))}
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/conta/login">Conta</Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/admin">Admin</Link>
           </Button>
