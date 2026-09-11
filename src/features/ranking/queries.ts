@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
 import {
   RESULT_CATEGORIES,
   type ResultCategory,
@@ -117,24 +118,53 @@ export async function getStageById(id: string): Promise<Stage | null> {
   return data as Stage | null;
 }
 
+/** Public columns only — never select email/user_id for anon/authenticated clients. */
+const ATHLETE_PUBLIC_COLUMNS = "id, name, team, active, created_at";
+
 export async function getAthletes(): Promise<Athlete[]> {
   if (!isSupabaseConfigured()) return [];
+
+  // Admin list needs email/user_id — service role (after migration 009 those cols are revoked from API roles)
+  if (hasServiceRoleKey()) {
+    const service = createServiceClient();
+    const { data, error } = await service
+      .from("athletes")
+      .select("id, name, team, email, user_id, active, created_at")
+      .eq("active", true)
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Athlete[];
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("athletes")
-    .select("*")
+    .select(ATHLETE_PUBLIC_COLUMNS)
     .eq("active", true)
     .order("name", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as Athlete[];
+  return (data ?? []).map((row) => ({
+    ...(row as Omit<Athlete, "email" | "user_id">),
+    email: null,
+    user_id: null,
+  }));
 }
 
 export async function getAthleteById(id: string): Promise<Athlete | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase.from("athletes").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("athletes")
+    .select(ATHLETE_PUBLIC_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
-  return data as Athlete | null;
+  if (!data) return null;
+  return {
+    ...(data as Omit<Athlete, "email" | "user_id">),
+    email: null,
+    user_id: null,
+  };
 }
 
 export async function getOverallRanking(): Promise<RankingRow[]> {

@@ -7,6 +7,8 @@ export type Athlete = {
   id: string;
   name: string;
   team: string | null;
+  email: string | null;
+  user_id: string | null;
   active: boolean;
   created_at: string;
 };
