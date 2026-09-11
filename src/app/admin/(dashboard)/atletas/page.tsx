@@ -2,9 +2,9 @@ import { createAthleteAction } from "@/features/admin/actions";
 import {
   generateAthleteInviteLinkAction,
   inviteAthleteAction,
-  peekInviteLinkFlash,
   unlinkAthleteAction,
 } from "@/features/account/actions";
+import { peekInviteLinkFlash } from "@/features/account/invite-link-flash";
 import { getAthletes } from "@/features/ranking/queries";
 import { hasServiceRoleKey } from "@/lib/supabase/service";
 import { Button } from "@/components/ui/button";

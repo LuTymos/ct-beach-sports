@@ -1,31 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
 import { isAdminUser } from "@/lib/supabase/is-admin";
 import { getLinkedAthlete, getSessionUser } from "@/lib/supabase/auth";
-
-/** HttpOnly flash cookie — invite magic link must not appear in the URL. */
-export const INVITE_LINK_COOKIE = "admin_athlete_invite_link";
-
-export async function peekInviteLinkFlash(): Promise<string | null> {
-  const jar = await cookies();
-  return jar.get(INVITE_LINK_COOKIE)?.value ?? null;
-}
-
-async function setInviteLinkFlash(link: string) {
-  const jar = await cookies();
-  jar.set(INVITE_LINK_COOKIE, link, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/admin",
-    maxAge: 60 * 5,
-  });
-}
+import { setInviteLinkFlash } from "@/features/account/invite-link-flash";
 
 function athletePath(id: string, query?: string) {
   return query ? `/atletas/${id}?${query}` : `/atletas/${id}`;
