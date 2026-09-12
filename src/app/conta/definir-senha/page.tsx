@@ -1,9 +1,6 @@
-import { setAthletePasswordAction } from "@/features/account/actions";
+import { SetPasswordForm } from "@/features/account/set-password-form";
 import { getSessionUser, isAdminUser } from "@/lib/supabase/auth";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { redirect } from "next/navigation";
 
@@ -18,7 +15,7 @@ export default async function SetPasswordPage({ searchParams }: PageProps) {
   if (!user) {
     redirect(
       "/conta/login?error=" +
-        encodeURIComponent("Abra o link novo do e-mail de convite para definir a senha.")
+        encodeURIComponent("Abra o link novo do convite para definir a senha.")
     );
   }
 
@@ -45,36 +42,10 @@ export default async function SetPasswordPage({ searchParams }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle>Nova senha</CardTitle>
-          <CardDescription>Mínimo de 6 caracteres.</CardDescription>
+          <CardDescription>Mínimo de 6 caracteres. Toque em salvar só uma vez.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={setAthletePasswordAction} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password_confirm">Confirmar senha</Label>
-              <Input
-                id="password_confirm"
-                name="password_confirm"
-                type="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Salvar e entrar
-            </Button>
-          </form>
+          <SetPasswordForm />
         </CardContent>
       </Card>
     </div>
