@@ -49,14 +49,17 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Logged-in athlete on login page → own profile (or /conta)
-  // Allow /conta/definir-senha so invite flow can set password.
+  // Allow /conta/definir-senha and /conta/ativar for invite flow.
   if (path === "/conta/login" && user && !isAdminUser(user)) {
     const conta = request.nextUrl.clone();
     conta.pathname = "/conta";
     return NextResponse.redirect(conta);
   }
 
-  if ((path === "/conta/login" || path === "/conta/definir-senha") && isAdminUser(user)) {
+  if (
+    (path === "/conta/login" || path === "/conta/definir-senha" || path === "/conta/ativar") &&
+    isAdminUser(user)
+  ) {
     const dashboard = request.nextUrl.clone();
     dashboard.pathname = "/admin";
     return NextResponse.redirect(dashboard);
