@@ -103,7 +103,16 @@ function siteOrigin() {
 }
 
 function inviteRedirectTo() {
+  // Still used for e-mail invites (Supabase template). Generated WhatsApp links use /conta/ativar.
   return `${siteOrigin()}/auth/callback?next=${encodeURIComponent("/conta/definir-senha")}`;
+}
+
+function buildActivateLink(tokenHash: string, type: "invite" | "recovery") {
+  const params = new URLSearchParams({
+    token_hash: tokenHash,
+    type,
+  });
+  return `${siteOrigin()}/conta/ativar?${params.toString()}`;
 }
 
 async function findAuthUserByEmail(email: string) {
@@ -166,6 +175,7 @@ async function generateInviteLinkAndBind(opts: {
     existing = null;
   }
 
+  const linkType = existing ? ("recovery" as const) : ("invite" as const);
   const { data, error } = existing
     ? await service.auth.admin.generateLink({
         type: "recovery",
@@ -181,7 +191,8 @@ async function generateInviteLinkAndBind(opts: {
         },
       });
 
-  if (error || !data.user?.id || !data.properties?.action_link) {
+  const tokenHash = data?.properties?.hashed_token;
+  if (error || !data?.user?.id || !tokenHash) {
     redirect(
       `/admin/atletas?error=${encodeURIComponent(
         error?.message ?? "Não foi possível gerar o link de convite"
@@ -201,11 +212,12 @@ async function generateInviteLinkAndBind(opts: {
   revalidatePath("/admin/atletas");
   revalidatePath(`/atletas/${athleteId}`);
 
-  await setInviteLinkFlash(data.properties.action_link);
+  // Our /conta/ativar page verifies only on button tap — avoids Gmail/Google burning the OTP.
+  await setInviteLinkFlash(buildActivateLink(tokenHash, linkType));
 
   const prefix =
     note ??
-    "Link gerado (sem e-mail — limite do Supabase). Abra em janela anônima:";
+    "Link gerado. Envie no WhatsApp; a atleta toca em “Ativar minha conta” e define a senha.";
   redirect(`/admin/atletas?ok=${encodeURIComponent(prefix)}`);
 }
 

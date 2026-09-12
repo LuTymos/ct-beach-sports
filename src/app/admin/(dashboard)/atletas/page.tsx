@@ -70,11 +70,10 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
       )}
       <Alert>
         <AlertDescription>
-          O free tier do Supabase limita e-mails. Se aparecer{" "}
-          <strong>email rate limit exceeded</strong>, use{" "}
-          <strong>Gerar link (sem e-mail)</strong> e abra em janela anônima. Em Supabase →
-          Authentication → URL Configuration: <code>http://localhost:3000/**</code> e{" "}
-          <code>http://localhost:3000/auth/callback</code>.
+          Prefira <strong>Gerar link</strong> e enviar no <strong>WhatsApp</strong> — links de
+          e-mail (Gmail/Google no iPhone) costumam “queimar” sozinhos. A atleta abre o link, toca
+          em <strong>Ativar minha conta</strong> e define a senha. Em Supabase → URL Configuration
+          inclua o domínio de produção e <code>/auth/callback</code>.
         </AlertDescription>
       </Alert>
 
