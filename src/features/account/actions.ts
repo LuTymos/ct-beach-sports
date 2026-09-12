@@ -402,7 +402,29 @@ export async function setAthletePasswordAction(formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
+
   if (error) {
+    const samePassword = /different from the old password/i.test(error.message);
+
+    // iOS often double-submits: first request already set the password; second gets this error.
+    // If sign-in works with the typed password, treat as success.
+    if (samePassword && user.email) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+      if (!signInError) {
+        const linked = await getLinkedAthlete();
+        redirect(linked ? `/atletas/${linked.id}` : "/conta");
+      }
+      redirect(
+        "/conta/definir-senha?error=" +
+          encodeURIComponent(
+            "Esta senha já estava definida. Escolha outra, ou entre em Conta → Entrar com e-mail e senha."
+          )
+      );
+    }
+
     redirect(`/conta/definir-senha?error=${encodeURIComponent(error.message)}`);
   }
 
