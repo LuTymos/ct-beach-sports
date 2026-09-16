@@ -15,6 +15,15 @@ type RankingTableProps = {
   emptyMessage?: string;
 };
 
+function PositionBadge({ position }: { position: number }) {
+  if (position <= 3) {
+    return (
+      <Badge variant={position === 1 ? "default" : "secondary"}>{position}º</Badge>
+    );
+  }
+  return <span className="text-muted-foreground">{position}º</span>;
+}
+
 export function RankingTable({
   rows,
   emptyMessage = "Nenhum resultado lançado ainda.",
@@ -32,9 +41,9 @@ export function RankingTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-16">#</TableHead>
+            <TableHead className="w-14 sm:w-16">#</TableHead>
             <TableHead>Atleta</TableHead>
-            <TableHead>Equipe</TableHead>
+            <TableHead className="hidden sm:table-cell">Equipe</TableHead>
             <TableHead className="text-right">Pontos</TableHead>
           </TableRow>
         </TableHeader>
@@ -42,20 +51,24 @@ export function RankingTable({
           {rows.map((row) => (
             <TableRow key={row.athleteId}>
               <TableCell>
-                {row.position <= 3 ? (
-                  <Badge variant={row.position === 1 ? "default" : "secondary"}>
-                    {row.position}º
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground">{row.position}º</span>
-                )}
+                <PositionBadge position={row.position} />
               </TableCell>
-              <TableCell className="font-medium">
-                <Link href={`/atletas/${row.athleteId}`} className="hover:underline">
+              <TableCell className="max-w-[12rem] font-medium sm:max-w-none">
+                <Link
+                  href={`/atletas/${row.athleteId}`}
+                  className="block truncate hover:underline"
+                >
                   {row.name}
                 </Link>
+                {row.team ? (
+                  <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground sm:hidden">
+                    {row.team}
+                  </span>
+                ) : null}
               </TableCell>
-              <TableCell className="text-muted-foreground">{row.team ?? "—"}</TableCell>
+              <TableCell className="hidden text-muted-foreground sm:table-cell">
+                {row.team ?? "—"}
+              </TableCell>
               <TableCell className="text-right font-semibold tabular-nums">
                 {row.totalPoints}
               </TableCell>

@@ -82,7 +82,32 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
         </CardContent>
       </Card>
 
-      <div className="rounded-xl border bg-card">
+      <ul className="space-y-2 md:hidden">
+        {stages.map((stage) => (
+          <li key={stage.id} className="space-y-3 rounded-xl border bg-card p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">#{stage.sort_order}</p>
+              <p className="font-medium">{stage.title}</p>
+              <p className="text-sm text-muted-foreground">
+                {stage.date}
+                {stage.location ? ` · ${stage.location}` : ""}
+                {" · "}
+                {stage.status === "completed" ? "Realizada" : "Agendada"}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button asChild variant="outline" className="h-11">
+                <Link href={`/admin/etapas/${stage.id}/inscricoes`}>Inscrições</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11">
+                <Link href={`/admin/etapas/${stage.id}`}>Editar</Link>
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden rounded-xl border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
