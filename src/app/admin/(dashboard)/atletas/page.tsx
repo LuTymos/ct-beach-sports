@@ -27,6 +27,81 @@ type PageProps = {
   searchParams: Promise<{ error?: string; ok?: string }>;
 };
 
+function AthleteAccountBadge({
+  userId,
+  email,
+}: {
+  userId: string | null;
+  email: string | null;
+}) {
+  if (userId) return <Badge>Vinculado</Badge>;
+  if (email) return <Badge variant="secondary">Convite: {email}</Badge>;
+  return <span className="text-muted-foreground">Sem conta</span>;
+}
+
+function AthleteInviteActions({
+  athleteId,
+  email,
+  userId,
+  canInvite,
+}: {
+  athleteId: string;
+  email: string | null;
+  userId: string | null;
+  canInvite: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <form className="flex flex-col gap-2">
+        <input type="hidden" name="athlete_id" value={athleteId} />
+        <div className="space-y-1">
+          <Label htmlFor={`email-${athleteId}`} className="sr-only">
+            E-mail
+          </Label>
+          <Input
+            id={`email-${athleteId}`}
+            name="email"
+            type="email"
+            required
+            placeholder="email@exemplo.com"
+            defaultValue={email ?? ""}
+            className="h-11 md:h-9"
+          />
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!canInvite}
+            formAction={inviteAthleteAction}
+            className="h-11 md:h-8"
+          >
+            {userId ? "Reenviar e-mail" : "Convidar"}
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            variant="secondary"
+            disabled={!canInvite}
+            formAction={generateAthleteInviteLinkAction}
+            className="h-11 md:h-8"
+          >
+            Gerar link (sem e-mail)
+          </Button>
+        </div>
+      </form>
+      {userId ? (
+        <form action={unlinkAthleteAction}>
+          <input type="hidden" name="athlete_id" value={athleteId} />
+          <Button type="submit" variant="outline" size="sm" className="h-11 w-full md:h-8 md:w-auto">
+            Desvincular
+          </Button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
 export default async function AdminAthletesPage({ searchParams }: PageProps) {
   const { error, ok } = await searchParams;
   const athletes = await getAthletes();
@@ -85,27 +160,59 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
           <form action={createAthleteAction} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
-              <Input id="name" name="name" required />
+              <Input id="name" name="name" required className="h-11 md:h-9" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="team">Arena / equipe (opcional)</Label>
-              <Input id="team" name="team" placeholder="Nacional, Summer..." />
+              <Input
+                id="team"
+                name="team"
+                placeholder="Nacional, Summer..."
+                className="h-11 md:h-9"
+              />
             </div>
             <div className="flex items-end">
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" className="h-11 w-full md:h-9 md:w-auto">
+                Salvar
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
 
-      <div className="rounded-xl border bg-card">
+      <ul className="space-y-3 md:hidden">
+        {athletes.map((athlete) => (
+          <li key={athlete.id} className="space-y-3 rounded-xl border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <Link
+                  href={`/atletas/${athlete.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {athlete.name}
+                </Link>
+                <p className="text-sm text-muted-foreground">{athlete.team ?? "Sem equipe"}</p>
+              </div>
+              <AthleteAccountBadge userId={athlete.user_id} email={athlete.email} />
+            </div>
+            <AthleteInviteActions
+              athleteId={athlete.id}
+              email={athlete.email}
+              userId={athlete.user_id}
+              canInvite={canInvite}
+            />
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden rounded-xl border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Arena / equipe</TableHead>
               <TableHead>Conta</TableHead>
-              <TableHead className="min-w-[18rem]">Vincular / convidar</TableHead>
+              <TableHead>Vincular / convidar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -118,60 +225,15 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
                 </TableCell>
                 <TableCell>{athlete.team ?? "—"}</TableCell>
                 <TableCell>
-                  {athlete.user_id ? (
-                    <Badge>Vinculado</Badge>
-                  ) : athlete.email ? (
-                    <Badge variant="secondary">Convite: {athlete.email}</Badge>
-                  ) : (
-                    <span className="text-muted-foreground">Sem conta</span>
-                  )}
+                  <AthleteAccountBadge userId={athlete.user_id} email={athlete.email} />
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-2">
-                    <form className="flex flex-col gap-2">
-                      <input type="hidden" name="athlete_id" value={athlete.id} />
-                      <div className="flex flex-wrap items-end gap-2">
-                        <div className="min-w-[12rem] flex-1 space-y-1">
-                          <Label htmlFor={`email-${athlete.id}`} className="sr-only">
-                            E-mail
-                          </Label>
-                          <Input
-                            id={`email-${athlete.id}`}
-                            name="email"
-                            type="email"
-                            required
-                            placeholder="email@exemplo.com"
-                            defaultValue={athlete.email ?? ""}
-                          />
-                        </div>
-                        <Button
-                          type="submit"
-                          size="sm"
-                          disabled={!canInvite}
-                          formAction={inviteAthleteAction}
-                        >
-                          {athlete.user_id ? "Reenviar e-mail" : "Convidar"}
-                        </Button>
-                        <Button
-                          type="submit"
-                          size="sm"
-                          variant="secondary"
-                          disabled={!canInvite}
-                          formAction={generateAthleteInviteLinkAction}
-                        >
-                          Gerar link (sem e-mail)
-                        </Button>
-                      </div>
-                    </form>
-                    {athlete.user_id ? (
-                      <form action={unlinkAthleteAction}>
-                        <input type="hidden" name="athlete_id" value={athlete.id} />
-                        <Button type="submit" variant="outline" size="sm">
-                          Desvincular
-                        </Button>
-                      </form>
-                    ) : null}
-                  </div>
+                  <AthleteInviteActions
+                    athleteId={athlete.id}
+                    email={athlete.email}
+                    userId={athlete.user_id}
+                    canInvite={canInvite}
+                  />
                 </TableCell>
               </TableRow>
             ))}

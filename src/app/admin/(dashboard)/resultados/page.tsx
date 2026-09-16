@@ -143,7 +143,45 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
         </CardContent>
       </Card>
 
-      <div className="rounded-xl border bg-card">
+      <ul className="space-y-2 md:hidden">
+        {results.map((result) => {
+          const athlete = result.athletes as { name?: string } | null;
+          const stage = result.stages as { title?: string } | null;
+          const category = result.category as ResultCategory | undefined;
+          const level = result.level as ResultLevel | undefined;
+          return (
+            <li key={result.id as string} className="rounded-xl border bg-card p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{athlete?.name ?? "—"}</p>
+                  <p className="text-sm text-muted-foreground">{stage?.title ?? "—"}</p>
+                  <p className="mt-1 text-sm">
+                    {category ? CATEGORY_LABELS[category] : "—"}
+                    {" · "}
+                    {level ? LEVEL_LABELS[level] : "—"}
+                    {" · "}
+                    {result.series as string}
+                    {(result.placement as number | null) != null
+                      ? ` ${result.placement as number}º`
+                      : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <p className="font-semibold tabular-nums">{result.points as number} pts</p>
+                  <form action={deleteResultAction}>
+                    <input type="hidden" name="id" value={result.id as string} />
+                    <Button type="submit" variant="ghost" size="sm" className="h-11 px-3">
+                      Excluir
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden rounded-xl border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>

@@ -102,7 +102,38 @@ export default async function AthletePage({ params, searchParams }: PageProps) {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Detalhe dos resultados</h2>
-        <div className="rounded-xl border bg-card">
+
+        <ul className="space-y-2 md:hidden">
+          {results.length === 0 ? (
+            <li className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+              Sem resultados ainda.
+            </li>
+          ) : (
+            results.map((result) => (
+              <li key={result.id} className="rounded-xl border bg-card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{result.stage?.title ?? "—"}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {CATEGORY_LABELS[result.category] ?? result.category ?? "—"}
+                      {" · "}
+                      {LEVEL_LABELS[result.level] ?? result.level ?? "—"}
+                    </p>
+                    <p className="mt-1 text-sm">
+                      {formatResultLabel(
+                        result.series as Series,
+                        result.placement as Placement | null
+                      )}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-base font-semibold tabular-nums">{result.points}</p>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <div className="hidden rounded-xl border bg-card md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -130,6 +161,13 @@ export default async function AthletePage({ params, searchParams }: PageProps) {
                   <TableCell className="text-right tabular-nums">{result.points}</TableCell>
                 </TableRow>
               ))}
+              {results.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    Sem resultados ainda.
+                  </TableCell>
+                </TableRow>
+              ) : null}
             </TableBody>
           </Table>
         </div>

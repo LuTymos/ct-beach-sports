@@ -231,7 +231,130 @@ export default async function AdminStageEntriesPage({ params, searchParams }: Pa
                     return (
                       <div key={`${category}-${level}`} className="space-y-2">
                         <p className="text-sm text-muted-foreground">{LEVEL_LABELS[level]}</p>
-                        <div className="overflow-x-auto rounded-xl border">
+                        <div className="space-y-3 md:hidden">
+                          {inLevel.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className="space-y-3 rounded-xl border bg-card p-3"
+                            >
+                              <ul className="space-y-0.5">
+                                {entry.members.map((member) => (
+                                  <li key={member.id} className="font-medium">
+                                    {member.athleteName}
+                                    {member.athleteTeam ? (
+                                      <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                        ({member.athleteTeam})
+                                      </span>
+                                    ) : null}
+                                  </li>
+                                ))}
+                              </ul>
+
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  Pagamento
+                                </p>
+                                <div className="flex flex-col gap-2">
+                                  {entry.members.map((member) => (
+                                    <form key={member.id} action={toggleMemberPaidAction}>
+                                      <input type="hidden" name="stage_id" value={stage.id} />
+                                      <input type="hidden" name="member_id" value={member.id} />
+                                      <input
+                                        type="hidden"
+                                        name="paid"
+                                        value={member.paid ? "true" : "false"}
+                                      />
+                                      <Button
+                                        type="submit"
+                                        variant="outline"
+                                        className="h-11 w-full justify-between"
+                                      >
+                                        <span>{member.athleteName.split(" ")[0]}</span>
+                                        <span>{member.paid ? "Pagou" : "Não pagou"}</span>
+                                      </Button>
+                                    </form>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium text-muted-foreground">Pódio</p>
+                                {entry.podiumSeries && entry.podiumPlacement != null ? (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge>
+                                      {formatResultLabel(
+                                        entry.podiumSeries,
+                                        entry.podiumPlacement as 1 | 2 | 3 | 4
+                                      )}
+                                    </Badge>
+                                    <form action={clearEntryPodiumAction}>
+                                      <input type="hidden" name="stage_id" value={stage.id} />
+                                      <input type="hidden" name="entry_id" value={entry.id} />
+                                      <Button type="submit" variant="ghost" className="h-11">
+                                        Limpar pódio
+                                      </Button>
+                                    </form>
+                                  </div>
+                                ) : (
+                                  <form
+                                    action={setEntryPodiumAction}
+                                    className="grid grid-cols-2 gap-2"
+                                  >
+                                    <input type="hidden" name="stage_id" value={stage.id} />
+                                    <input type="hidden" name="entry_id" value={entry.id} />
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Série</Label>
+                                      <select
+                                        name="series"
+                                        required
+                                        className={cn(selectClassName, "h-11")}
+                                        defaultValue="ouro"
+                                      >
+                                        {PODIUM_OPTIONS.map((series) => (
+                                          <option key={series} value={series}>
+                                            {SERIES_LABELS[series]}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Colocação</Label>
+                                      <select
+                                        name="placement"
+                                        required
+                                        className={cn(selectClassName, "h-11")}
+                                        defaultValue="1"
+                                      >
+                                        {[1, 2, 3, 4].map((n) => (
+                                          <option key={n} value={n}>
+                                            {n}º
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <Button type="submit" className="col-span-2 h-11">
+                                      Lançar pódio
+                                    </Button>
+                                  </form>
+                                )}
+                              </div>
+
+                              <form action={deleteStageEntryAction}>
+                                <input type="hidden" name="stage_id" value={stage.id} />
+                                <input type="hidden" name="entry_id" value={entry.id} />
+                                <Button
+                                  type="submit"
+                                  variant="destructive"
+                                  className="h-11 w-full"
+                                >
+                                  Remover dupla
+                                </Button>
+                              </form>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="hidden overflow-x-auto rounded-xl border md:block">
                           <Table>
                             <TableHeader>
                               <TableRow>
