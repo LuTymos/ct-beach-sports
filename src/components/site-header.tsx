@@ -5,6 +5,7 @@ const links = [
   { href: "/", label: "Ranking" },
   { href: "/etapas", label: "Etapas" },
   { href: "/contato", label: "Contato" },
+  { href: "/sobre", label: "Sobre" },
 ];
 
 export function SiteHeader() {
