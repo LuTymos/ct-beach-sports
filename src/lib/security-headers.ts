@@ -1,4 +1,4 @@
-import { getSupabaseUrl } from "@/lib/supabase/config";
+import { getSupabaseUrl } from "./supabase/config";
 
 export function contentSecurityPolicy(): string {
   let connect = "'self'";
