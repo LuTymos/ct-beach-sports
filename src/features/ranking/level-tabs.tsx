@@ -12,6 +12,7 @@ type LevelTabsProps = {
   active: ResultLevel | "todos";
   categoria: ResultCategory | "todos";
   basePath?: string;
+  q?: string;
 };
 
 const TABS: Array<{ value: ResultLevel | "todos"; label: string }> = [
@@ -19,7 +20,7 @@ const TABS: Array<{ value: ResultLevel | "todos"; label: string }> = [
   ...RESULT_LEVELS.map((level) => ({ value: level, label: LEVEL_LABELS[level] })),
 ];
 
-export function LevelTabs({ active, categoria, basePath = "/" }: LevelTabsProps) {
+export function LevelTabs({ active, categoria, basePath = "/", q }: LevelTabsProps) {
   return (
     <div
       className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
@@ -30,6 +31,7 @@ export function LevelTabs({ active, categoria, basePath = "/" }: LevelTabsProps)
         const href = buildRankingHref(basePath, {
           categoria,
           nivel: tab.value,
+          q,
         });
         const isActive = active === tab.value;
 
