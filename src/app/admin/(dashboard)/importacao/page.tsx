@@ -1,6 +1,8 @@
 import { importStageResultsAction } from "@/features/admin/actions";
+import { peekAdminFlashError } from "@/features/admin/flash-error";
 import { getStages } from "@/features/ranking/queries";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +26,7 @@ const selectClassName = cn(
 export default async function AdminImportPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const stages = await getStages();
+  const flashError = await peekAdminFlashError();
 
   return (
     <div className="space-y-6">
@@ -43,11 +46,13 @@ export default async function AdminImportPage({ searchParams }: PageProps) {
         </Button>
       </div>
 
-      {params.error && (
+      {flashError ? (
         <Alert variant="destructive">
           <AlertTitle>Importação bloqueada</AlertTitle>
-          <AlertDescription className="break-words">{params.error}</AlertDescription>
+          <AlertDescription className="break-words">{flashError}</AlertDescription>
         </Alert>
+      ) : (
+        <MappedErrorAlert error={params.error} title="Importação bloqueada" />
       )}
 
       {params.ok === "1" && (
@@ -118,6 +123,7 @@ export default async function AdminImportPage({ searchParams }: PageProps) {
             Linhas duplicadas na mesma etapa (mesmo atleta + categoria + nível + série +
             colocação) são ignoradas — dá para reimportar com segurança parcial.
           </p>
+          <p>Máximo 400 linhas de dados e 512 KB. Só arquivos .csv de texto.</p>
           <p>
             Use o botão <span className="text-foreground">Baixar CSV de exemplo</span> para
             um modelo com ouro, bronzinho e participação.

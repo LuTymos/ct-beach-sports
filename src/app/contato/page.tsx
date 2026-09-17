@@ -1,5 +1,6 @@
 import { submitContactTicketAction } from "@/features/contact/actions";
 import { TICKET_REASON_LABELS, TICKET_REASONS } from "@/features/contact/reasons";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +38,7 @@ export default async function ContatoPage({ searchParams }: PageProps) {
         </Alert>
       )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>Não foi possível enviar</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} title="Não foi possível enviar" />
 
       <Card>
         <CardHeader>
@@ -77,6 +73,16 @@ export default async function ContatoPage({ searchParams }: PageProps) {
                 maxLength={4000}
                 rows={6}
                 placeholder="Descreva o que aconteceu, etapa, atleta, etc."
+              />
+            </div>
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
               />
             </div>
             <Button type="submit" className="w-full sm:w-auto">

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test src/lib/safe-url.test.ts src/lib/password.test.ts src/lib/flash-errors.test.ts src/features/admin/import-csv.test.ts src/features/admin/stage-schema.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -39,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

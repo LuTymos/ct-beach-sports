@@ -5,7 +5,7 @@ import {
   unlinkAthleteAction,
 } from "@/features/account/actions";
 import { peekInviteLinkFlash } from "@/features/account/invite-link-flash";
-import { getAthletes } from "@/features/ranking/queries";
+import { getAthletesAdmin } from "@/features/ranking/queries";
 import { hasServiceRoleKey } from "@/lib/supabase/service";
 import { ListSearch } from "@/components/list-search";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Badge } from "@/components/ui/badge";
 import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
 import { paginate } from "@/lib/paginate";
@@ -110,7 +111,7 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
   const { error, ok, q: qRaw, page: pageRaw } = await searchParams;
   const q = parseSearch(qRaw);
   const page = parsePage(pageRaw);
-  const athletes = await getAthletes();
+  const athletes = await getAthletesAdmin();
   const filtered = q
     ? athletes.filter(
         (athlete) => matchesSearch(athlete.name, q) || matchesSearch(athlete.team, q)
@@ -123,11 +124,7 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Atletas</h1>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} />
       {ok && (
         <Alert>
           <AlertDescription className="space-y-2">

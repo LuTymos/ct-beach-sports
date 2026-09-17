@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
+import { isAdminUser } from "@/lib/supabase/is-admin";
 import type { ResultCategory, ResultLevel } from "@/lib/categories";
 
 export type StageEntryMemberPublic = {
@@ -132,8 +134,18 @@ export async function getStageEntriesPublic(stageId: string): Promise<StageEntry
 export async function getStageEntriesAdmin(stageId: string): Promise<StageEntryAdmin[]> {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminUser(user)) {
+    throw new Error("Admin required");
+  }
+  const client = hasServiceRoleKey() ? createServiceClient() : supabase;
+  const memberSelect = hasServiceRoleKey()
+    ? `id, entry_id, athlete_id, paid, athletes ( name, team )`
+    : `id, entry_id, athlete_id, athletes ( name, team )`;
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("stage_entries")
     .select(
       `
@@ -146,11 +158,7 @@ export async function getStageEntriesAdmin(stageId: string): Promise<StageEntryA
       source,
       created_at,
       stage_entry_members (
-        id,
-        entry_id,
-        athlete_id,
-        paid,
-        athletes ( name, team )
+        ${memberSelect}
       )
     `
     )

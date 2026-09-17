@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,17 +12,34 @@ const ALLOWED_TYPES = new Set<EmailOtpType>(["invite", "recovery", "magiclink", 
 
 /**
  * Scanners (Gmail/Google) often prefetch the Supabase /verify URL and burn the one-time token.
- * This page only calls verifyOtp when the athlete taps the button.
+ * Token lives in the URL hash (not query) so it is not sent as Referer; we move it to state
+ * and strip the fragment. verifyOtp runs only when the athlete taps the button.
  */
 export function ActivateAccountClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tokenHash, setTokenHash] = useState<string | null>(null);
+  const [type, setType] = useState<EmailOtpType>("invite");
+  const [ready, setReady] = useState(false);
 
-  const tokenHash = searchParams.get("token_hash") ?? "";
-  const typeRaw = (searchParams.get("type") ?? "invite") as EmailOtpType;
-  const type = ALLOWED_TYPES.has(typeRaw) ? typeRaw : "invite";
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const fromHash = hash.get("token_hash") ?? "";
+    const fromQuery = searchParams.get("token_hash") ?? "";
+    const token = fromHash || fromQuery;
+    const typeRaw = (hash.get("type") || searchParams.get("type") || "invite") as EmailOtpType;
+    // Hash/query only exist after mount; strip them so the token is not in Referer.
+    queueMicrotask(() => {
+      setTokenHash(token || null);
+      setType(ALLOWED_TYPES.has(typeRaw) ? typeRaw : "invite");
+      setReady(true);
+    });
+    if (window.location.hash || fromQuery) {
+      window.history.replaceState(null, "", "/conta/ativar");
+    }
+  }, [searchParams]);
 
   async function activate() {
     if (!tokenHash) {
@@ -42,15 +59,17 @@ export function ActivateAccountClient() {
     if (verifyError) {
       setPending(false);
       setError(
-        /expired|otp|invalid|used/i.test(verifyError.message)
-          ? "Link expirado ou já usado. Peça um novo ao professor (WhatsApp costuma funcionar melhor)."
-          : verifyError.message
+        "Link expirado ou já usado. Peça um novo ao professor (WhatsApp costuma funcionar melhor)."
       );
       return;
     }
 
     router.replace("/conta/definir-senha");
     router.refresh();
+  }
+
+  if (!ready) {
+    return <p className="text-center text-sm text-muted-foreground">Carregando convite…</p>;
   }
 
   if (!tokenHash) {

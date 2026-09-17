@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
@@ -31,11 +32,7 @@ export default async function AdminStagesPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold tracking-tight">Etapas</h1>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} />
       {updated && (
         <Alert>
           <AlertDescription>Etapa atualizada com sucesso.</AlertDescription>

@@ -3,7 +3,7 @@ import { LoginSubmitButton } from "@/features/admin/login-submit-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 
 type PageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -23,10 +23,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Falha no login</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <MappedErrorAlert error={error} title="Falha no login" />
           )}
           <form action={loginAction} className="space-y-4">
             <div className="space-y-2">

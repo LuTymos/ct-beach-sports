@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminUser } from "@/lib/supabase/is-admin";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 import {
   calculatePoints,
   type Placement,
@@ -13,26 +12,18 @@ import {
   createStageEntrySchema,
   setEntryPodiumSchema,
 } from "@/features/entries/schema";
+import { errorQuery, type ErrorCode } from "@/lib/flash-errors";
 
 const PODIUM_SERIES = new Set(["ouro", "prata", "bronze", "bronzinho"]);
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user || !isAdminUser(user)) {
-    redirect("/admin/login");
-  }
-
-  return supabase;
-}
 
 function entriesPath(stageId: string, query?: string) {
   const base = `/admin/etapas/${stageId}/inscricoes`;
   return query ? `${base}?${query}` : base;
+}
+
+function fail(stageId: string, code: ErrorCode): never {
+  if (!stageId) redirect("/admin/etapas");
+  redirect(entriesPath(stageId, errorQuery(code)));
 }
 
 function revalidateEntryPaths(stageId: string, athleteIds: string[] = []) {
@@ -49,6 +40,7 @@ function revalidateEntryPaths(stageId: string, athleteIds: string[] = []) {
 }
 
 export async function createStageEntryAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const parsed = createStageEntrySchema.safeParse({
     stage_id: String(formData.get("stage_id") ?? ""),
     category: String(formData.get("category") ?? ""),
@@ -58,14 +50,10 @@ export async function createStageEntryAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const stageId = String(formData.get("stage_id") ?? "");
-    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
-    if (!stageId) redirect("/admin/etapas");
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(message)}`));
+    fail(String(formData.get("stage_id") ?? ""), "invalid");
   }
 
   const { stage_id, category, level, athlete_id_a, athlete_id_b } = parsed.data;
-  const supabase = await requireAdmin();
 
   const { data: entry, error: entryError } = await supabase
     .from("stage_entries")
@@ -79,9 +67,7 @@ export async function createStageEntryAction(formData: FormData) {
     .single();
 
   if (entryError || !entry) {
-    redirect(
-      entriesPath(stage_id, `error=${encodeURIComponent(entryError?.message ?? "Falha ao criar dupla")}`)
-    );
+    fail(stage_id, "failed");
   }
 
   const { error: membersError } = await supabase.from("stage_entry_members").insert([
@@ -103,11 +89,7 @@ export async function createStageEntryAction(formData: FormData) {
 
   if (membersError) {
     await supabase.from("stage_entries").delete().eq("id", entry.id);
-    const message =
-      membersError.code === "23505"
-        ? "Atleta já inscrito nesta categoria nesta etapa"
-        : membersError.message;
-    redirect(entriesPath(stage_id, `error=${encodeURIComponent(message)}`));
+    fail(stage_id, membersError.code === "23505" ? "duplicate" : "failed");
   }
 
   revalidateEntryPaths(stage_id, [athlete_id_a, athlete_id_b]);
@@ -115,13 +97,12 @@ export async function createStageEntryAction(formData: FormData) {
 }
 
 export async function deleteStageEntryAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stageId = String(formData.get("stage_id") ?? "").trim();
   const entryId = String(formData.get("entry_id") ?? "").trim();
   if (!stageId || !entryId) {
     redirect("/admin/etapas");
   }
-
-  const supabase = await requireAdmin();
 
   const { data: entry } = await supabase
     .from("stage_entries")
@@ -131,7 +112,7 @@ export async function deleteStageEntryAction(formData: FormData) {
     .maybeSingle();
 
   if (!entry) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent("Dupla não encontrada")}`));
+    fail(stageId, "not_found");
   }
 
   const { data: members } = await supabase
@@ -155,7 +136,7 @@ export async function deleteStageEntryAction(formData: FormData) {
 
   const { error } = await supabase.from("stage_entries").delete().eq("id", entryId);
   if (error) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(error.message)}`));
+    fail(stageId, "failed");
   }
 
   revalidateEntryPaths(stageId, athleteIds);
@@ -163,6 +144,7 @@ export async function deleteStageEntryAction(formData: FormData) {
 }
 
 export async function toggleMemberPaidAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stageId = String(formData.get("stage_id") ?? "").trim();
   const memberId = String(formData.get("member_id") ?? "").trim();
   const paid = String(formData.get("paid") ?? "") === "true";
@@ -170,8 +152,6 @@ export async function toggleMemberPaidAction(formData: FormData) {
   if (!stageId || !memberId) {
     redirect("/admin/etapas");
   }
-
-  const supabase = await requireAdmin();
   const { error } = await supabase
     .from("stage_entry_members")
     .update({ paid: !paid })
@@ -179,7 +159,7 @@ export async function toggleMemberPaidAction(formData: FormData) {
     .eq("stage_id", stageId);
 
   if (error) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(error.message)}`));
+    fail(stageId, "failed");
   }
 
   revalidateEntryPaths(stageId);
@@ -187,6 +167,7 @@ export async function toggleMemberPaidAction(formData: FormData) {
 }
 
 export async function setEntryPodiumAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stageId = String(formData.get("stage_id") ?? "").trim();
   const parsed = setEntryPodiumSchema.safeParse({
     entry_id: String(formData.get("entry_id") ?? ""),
@@ -195,16 +176,13 @@ export async function setEntryPodiumAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
-    if (!stageId) redirect("/admin/etapas");
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(message)}`));
+    fail(stageId, "invalid");
   }
 
   if (!stageId) redirect("/admin/etapas");
 
   const { entry_id, series, placement } = parsed.data;
   const placementValue = placement as Placement;
-  const supabase = await requireAdmin();
 
   const { data: entry, error: entryError } = await supabase
     .from("stage_entries")
@@ -214,7 +192,7 @@ export async function setEntryPodiumAction(formData: FormData) {
     .maybeSingle();
 
   if (entryError || !entry) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent("Dupla não encontrada")}`));
+    fail(stageId, "not_found");
   }
 
   const { data: members, error: membersError } = await supabase
@@ -223,9 +201,7 @@ export async function setEntryPodiumAction(formData: FormData) {
     .eq("entry_id", entry_id);
 
   if (membersError || !members || members.length !== 2) {
-    redirect(
-      entriesPath(stageId, `error=${encodeURIComponent("Dupla precisa ter exatamente 2 atletas")}`)
-    );
+    fail(stageId, "pair");
   }
 
   const athleteIds = members.map((m) => m.athlete_id as string);
@@ -233,9 +209,8 @@ export async function setEntryPodiumAction(formData: FormData) {
   let points: number;
   try {
     points = calculatePoints(series as Series, placementValue);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Pontuação inválida";
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(message)}`));
+  } catch {
+    fail(stageId, "points");
   }
 
   if (entry.podium_series && entry.podium_placement != null) {
@@ -272,7 +247,7 @@ export async function setEntryPodiumAction(formData: FormData) {
 
   const { error: insertError } = await supabase.from("results").insert(rows);
   if (insertError) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(insertError.message)}`));
+    fail(stageId, "failed");
   }
 
   const { error: updateError } = await supabase
@@ -284,7 +259,7 @@ export async function setEntryPodiumAction(formData: FormData) {
     .eq("id", entry_id);
 
   if (updateError) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(updateError.message)}`));
+    fail(stageId, "failed");
   }
 
   revalidateEntryPaths(stageId, athleteIds);
@@ -292,11 +267,10 @@ export async function setEntryPodiumAction(formData: FormData) {
 }
 
 export async function clearEntryPodiumAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stageId = String(formData.get("stage_id") ?? "").trim();
   const entryId = String(formData.get("entry_id") ?? "").trim();
   if (!stageId || !entryId) redirect("/admin/etapas");
-
-  const supabase = await requireAdmin();
 
   const { data: entry } = await supabase
     .from("stage_entries")
@@ -334,7 +308,7 @@ export async function clearEntryPodiumAction(formData: FormData) {
     .eq("id", entryId);
 
   if (error) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(error.message)}`));
+    fail(stageId, "failed");
   }
 
   revalidateEntryPaths(stageId, athleteIds);
@@ -342,10 +316,9 @@ export async function clearEntryPodiumAction(formData: FormData) {
 }
 
 export async function closeStageEntriesAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stageId = String(formData.get("stage_id") ?? "").trim();
   if (!stageId) redirect("/admin/etapas");
-
-  const supabase = await requireAdmin();
 
   const { data: entries, error: entriesError } = await supabase
     .from("stage_entries")
@@ -361,7 +334,7 @@ export async function closeStageEntriesAction(formData: FormData) {
     .eq("stage_id", stageId);
 
   if (entriesError) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(entriesError.message)}`));
+    fail(stageId, "failed");
   }
 
   const { data: existingResults, error: resultsError } = await supabase
@@ -370,7 +343,7 @@ export async function closeStageEntriesAction(formData: FormData) {
     .eq("stage_id", stageId);
 
   if (resultsError) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(resultsError.message)}`));
+    fail(stageId, "failed");
   }
 
   const hasPodium = new Set(
@@ -419,7 +392,7 @@ export async function closeStageEntriesAction(formData: FormData) {
   if (toInsert.length > 0) {
     const { error: insertError } = await supabase.from("results").insert(toInsert);
     if (insertError) {
-      redirect(entriesPath(stageId, `error=${encodeURIComponent(insertError.message)}`));
+      fail(stageId, "failed");
     }
   }
 
@@ -429,7 +402,7 @@ export async function closeStageEntriesAction(formData: FormData) {
     .eq("id", stageId);
 
   if (statusError) {
-    redirect(entriesPath(stageId, `error=${encodeURIComponent(statusError.message)}`));
+    fail(stageId, "failed");
   }
 
   revalidateEntryPaths(stageId, [...athleteIds]);
