@@ -7,6 +7,8 @@ import {
 import { peekInviteLinkFlash } from "@/features/account/invite-link-flash";
 import { getAthletes } from "@/features/ranking/queries";
 import { hasServiceRoleKey } from "@/lib/supabase/service";
+import { ListSearch } from "@/components/list-search";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,10 +23,12 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
+import { paginate } from "@/lib/paginate";
 import Link from "next/link";
 
 type PageProps = {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; q?: string; page?: string }>;
 };
 
 function AthleteAccountBadge({
@@ -103,8 +107,16 @@ function AthleteInviteActions({
 }
 
 export default async function AdminAthletesPage({ searchParams }: PageProps) {
-  const { error, ok } = await searchParams;
+  const { error, ok, q: qRaw, page: pageRaw } = await searchParams;
+  const q = parseSearch(qRaw);
+  const page = parsePage(pageRaw);
   const athletes = await getAthletes();
+  const filtered = q
+    ? athletes.filter(
+        (athlete) => matchesSearch(athlete.name, q) || matchesSearch(athlete.team, q)
+      )
+    : athletes;
+  const paginated = paginate(filtered, page);
   const canInvite = hasServiceRoleKey();
   const inviteLink = await peekInviteLinkFlash();
 
@@ -180,66 +192,84 @@ export default async function AdminAthletesPage({ searchParams }: PageProps) {
         </CardContent>
       </Card>
 
-      <ul className="space-y-3 md:hidden">
-        {athletes.map((athlete) => (
-          <li key={athlete.id} className="space-y-3 rounded-xl border bg-card p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <Link
-                  href={`/atletas/${athlete.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {athlete.name}
-                </Link>
-                <p className="text-sm text-muted-foreground">{athlete.team ?? "Sem equipe"}</p>
-              </div>
-              <AthleteAccountBadge userId={athlete.user_id} email={athlete.email} />
-            </div>
-            <AthleteInviteActions
-              athleteId={athlete.id}
-              email={athlete.email}
-              userId={athlete.user_id}
-              canInvite={canInvite}
-            />
-          </li>
-        ))}
-      </ul>
+      <ListSearch action="/admin/atletas" q={q} placeholder="Buscar por nome ou equipe…" />
 
-      <div className="hidden rounded-xl border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Arena / equipe</TableHead>
-              <TableHead>Conta</TableHead>
-              <TableHead>Vincular / convidar</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {athletes.map((athlete) => (
-              <TableRow key={athlete.id}>
-                <TableCell className="font-medium">
-                  <Link href={`/atletas/${athlete.id}`} className="hover:underline">
-                    {athlete.name}
-                  </Link>
-                </TableCell>
-                <TableCell>{athlete.team ?? "—"}</TableCell>
-                <TableCell>
+      {paginated.total === 0 ? (
+        <p className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+          {q ? "Nenhum atleta encontrado." : "Nenhum atleta cadastrado."}
+        </p>
+      ) : (
+        <>
+          <ul className="space-y-3 md:hidden">
+            {paginated.items.map((athlete) => (
+              <li key={athlete.id} className="space-y-3 rounded-xl border bg-card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/atletas/${athlete.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {athlete.name}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      {athlete.team ?? "Sem equipe"}
+                    </p>
+                  </div>
                   <AthleteAccountBadge userId={athlete.user_id} email={athlete.email} />
-                </TableCell>
-                <TableCell>
-                  <AthleteInviteActions
-                    athleteId={athlete.id}
-                    email={athlete.email}
-                    userId={athlete.user_id}
-                    canInvite={canInvite}
-                  />
-                </TableCell>
-              </TableRow>
+                </div>
+                <AthleteInviteActions
+                  athleteId={athlete.id}
+                  email={athlete.email}
+                  userId={athlete.user_id}
+                  canInvite={canInvite}
+                />
+              </li>
             ))}
-          </TableBody>
-        </Table>
-      </div>
+          </ul>
+
+          <div className="hidden rounded-xl border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Arena / equipe</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Vincular / convidar</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.items.map((athlete) => (
+                  <TableRow key={athlete.id}>
+                    <TableCell className="font-medium">
+                      <Link href={`/atletas/${athlete.id}`} className="hover:underline">
+                        {athlete.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{athlete.team ?? "—"}</TableCell>
+                    <TableCell>
+                      <AthleteAccountBadge userId={athlete.user_id} email={athlete.email} />
+                    </TableCell>
+                    <TableCell>
+                      <AthleteInviteActions
+                        athleteId={athlete.id}
+                        email={athlete.email}
+                        userId={athlete.user_id}
+                        canInvite={canInvite}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationControls
+            path="/admin/atletas"
+            paginated={paginated}
+            params={{ q }}
+          />
+        </>
+      )}
     </div>
   );
 }

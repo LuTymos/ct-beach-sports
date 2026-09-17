@@ -4,6 +4,8 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ListSearch } from "@/components/list-search";
+import { PaginationControls } from "@/components/pagination-controls";
 import { CategoryRankingTable } from "@/features/ranking/category-ranking-table";
 import { CategoryTabs } from "@/features/ranking/category-tabs";
 import { LevelTabs } from "@/features/ranking/level-tabs";
@@ -18,10 +20,12 @@ import {
   type ResultCategory,
   type ResultLevel,
 } from "@/lib/categories";
+import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
+import { paginate } from "@/lib/paginate";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ nivel?: string; categoria?: string }>;
+  searchParams: Promise<{ nivel?: string; categoria?: string; q?: string; page?: string }>;
 };
 
 function resolveLevel(value?: string): ResultLevel | "todos" {
@@ -36,16 +40,37 @@ function resolveCategory(value?: string): ResultCategory | "todos" {
 
 export default async function StageDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { nivel, categoria: categoriaParam } = await searchParams;
+  const { nivel, categoria: categoriaParam, q: qRaw, page: pageRaw } = await searchParams;
   const level = resolveLevel(nivel);
   const categoria = resolveCategory(categoriaParam);
+  const q = parseSearch(qRaw);
+  const page = parsePage(pageRaw);
   const stage = await getStageById(id);
   if (!stage) notFound();
+
+  const basePath = `/etapas/${id}`;
 
   const [ranking, entries] = await Promise.all([
     getCategoryRanking({ stageId: id, level }),
     getStageEntriesPublic(id),
   ]);
+
+  const filteredRanking = q
+    ? ranking.filter((row) => matchesSearch(row.name, q))
+    : ranking;
+
+  const listParams = {
+    q,
+    categoria: categoria === "todos" ? undefined : categoria,
+    nivel: level === "todos" ? undefined : level,
+  };
+
+  const paginatedTodos =
+    categoria === "todos" ? paginate(filteredRanking, page) : null;
+  const paginatedSingle =
+    categoria === "todos"
+      ? null
+      : paginate(toSingleCategoryRanking(filteredRanking, categoria), page);
 
   return (
     <div className="space-y-6">
@@ -88,21 +113,55 @@ export default async function StageDetailPage({ params, searchParams }: PageProp
       <section className="space-y-3">
         <h2 className="text-xl font-semibold tracking-tight">Ranking da etapa</h2>
         <div className="space-y-3">
-          <CategoryTabs active={categoria} nivel={level} basePath={`/etapas/${id}`} />
-          <LevelTabs active={level} categoria={categoria} basePath={`/etapas/${id}`} />
+          <CategoryTabs active={categoria} nivel={level} basePath={basePath} q={q} />
+          <LevelTabs active={level} categoria={categoria} basePath={basePath} q={q} />
         </div>
 
+        <ListSearch
+          action={basePath}
+          q={q}
+          placeholder="Buscar atleta no ranking…"
+          preserve={{
+            ...(categoria !== "todos" ? { categoria } : {}),
+            ...(level !== "todos" ? { nivel: level } : {}),
+          }}
+        />
+
         {categoria === "todos" ? (
-          <CategoryRankingTable
-            rows={ranking}
-            emptyMessage="Nenhum resultado nesta etapa ainda."
-          />
-        ) : (
-          <RankingTable
-            rows={toSingleCategoryRanking(ranking, categoria)}
-            emptyMessage="Nenhum resultado nesta etapa ainda."
-          />
-        )}
+          paginatedTodos && paginatedTodos.total === 0 ? (
+            <p className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+              {q ? "Nenhum atleta encontrado." : "Nenhum resultado nesta etapa ainda."}
+            </p>
+          ) : paginatedTodos ? (
+            <>
+              <CategoryRankingTable
+                rows={paginatedTodos.items}
+                emptyMessage="Nenhum resultado nesta etapa ainda."
+              />
+              <PaginationControls
+                path={basePath}
+                paginated={paginatedTodos}
+                params={listParams}
+              />
+            </>
+          ) : null
+        ) : paginatedSingle && paginatedSingle.total === 0 ? (
+          <p className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+            {q ? "Nenhum atleta encontrado." : "Nenhum resultado nesta etapa ainda."}
+          </p>
+        ) : paginatedSingle ? (
+          <>
+            <RankingTable
+              rows={paginatedSingle.items}
+              emptyMessage="Nenhum resultado nesta etapa ainda."
+            />
+            <PaginationControls
+              path={basePath}
+              paginated={paginatedSingle}
+              params={listParams}
+            />
+          </>
+        ) : null}
       </section>
     </div>
   );

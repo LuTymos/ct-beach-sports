@@ -1,5 +1,5 @@
 import { loginAction } from "@/features/admin/actions";
-import { Button } from "@/components/ui/button";
+import { LoginSubmitButton } from "@/features/admin/login-submit-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,14 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
           <form action={loginAction} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" name="email" type="email" required autoComplete="email" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="h-11 md:h-9"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -41,11 +48,10 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
                 type="password"
                 required
                 autoComplete="current-password"
+                className="h-11 md:h-9"
               />
             </div>
-            <Button type="submit" className="w-full">
-              Entrar
-            </Button>
+            <LoginSubmitButton />
           </form>
         </CardContent>
       </Card>

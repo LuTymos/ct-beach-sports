@@ -84,7 +84,7 @@ export async function createAthleteAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin/atletas");
-  redirect("/admin/atletas");
+  redirect("/admin/atletas?ok=Atleta+cadastrado");
 }
 
 export async function createStageAction(formData: FormData) {
@@ -177,7 +177,7 @@ export async function createResultAction(formData: FormData) {
   revalidatePath(`/etapas/${stage_id}`);
   revalidatePath(`/atletas/${athlete_id}`);
   revalidatePath("/admin/resultados");
-  redirect("/admin/resultados");
+  redirect("/admin/resultados?ok=Resultado+lancado");
 }
 
 export async function deleteResultAction(formData: FormData) {

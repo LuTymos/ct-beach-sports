@@ -17,6 +17,7 @@ import {
   RESULT_LEVELS,
 } from "@/lib/categories";
 import { SERIES_LABELS, formatResultLabel } from "@/lib/scoring";
+import { AthletePicker } from "@/components/athlete-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -119,46 +120,20 @@ export default async function AdminStageEntriesPage({ params, searchParams }: Pa
         <CardContent>
           <form action={createStageEntryAction} className="grid gap-4 sm:grid-cols-2">
             <input type="hidden" name="stage_id" value={stage.id} />
-            <div className="space-y-2">
-              <Label htmlFor="athlete_id_a">Atleta A</Label>
-              <select
-                id="athlete_id_a"
-                name="athlete_id_a"
-                required
-                className={selectClassName}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {activeAthletes.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name}
-                    {athlete.team ? ` (${athlete.team})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="athlete_id_b">Atleta B</Label>
-              <select
-                id="athlete_id_b"
-                name="athlete_id_b"
-                required
-                className={selectClassName}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {activeAthletes.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name}
-                    {athlete.team ? ` (${athlete.team})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <AthletePicker
+              name="athlete_id_a"
+              id="athlete_id_a"
+              label="Atleta A"
+              required
+              athletes={activeAthletes}
+            />
+            <AthletePicker
+              name="athlete_id_b"
+              id="athlete_id_b"
+              label="Atleta B"
+              required
+              athletes={activeAthletes}
+            />
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
               <select

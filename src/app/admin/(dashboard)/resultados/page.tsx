@@ -12,6 +12,9 @@ import {
   type ResultLevel,
 } from "@/lib/categories";
 import { SERIES_LABELS, type Series } from "@/lib/scoring";
+import { AthletePicker } from "@/components/athlete-picker";
+import { ListSearch } from "@/components/list-search";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -24,23 +27,36 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
+import { paginate } from "@/lib/paginate";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; q?: string; page?: string }>;
 };
 
 const selectClassName = cn(
-  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  "flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9"
 );
 
 export default async function AdminResultsPage({ searchParams }: PageProps) {
-  const { error } = await searchParams;
+  const { error, ok, q: qRaw, page: pageRaw } = await searchParams;
+  const q = parseSearch(qRaw);
+  const page = parsePage(pageRaw);
   const [athletes, stages, results] = await Promise.all([
     getAthletes(),
     getStages(),
     getAllResults(),
   ]);
+
+  const filtered = q
+    ? results.filter((result) => {
+        const athlete = result.athletes as { name?: string } | null;
+        const stage = result.stages as { title?: string } | null;
+        return matchesSearch(athlete?.name, q) || matchesSearch(stage?.title, q);
+      })
+    : results;
+  const paginated = paginate(filtered, page);
 
   return (
     <div className="space-y-6">
@@ -55,6 +71,11 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      {ok && (
+        <Alert>
+          <AlertDescription>{ok}</AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -62,17 +83,13 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
         </CardHeader>
         <CardContent>
           <form action={createResultAction} className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="athlete_id">Atleta</Label>
-              <select id="athlete_id" name="athlete_id" required className={selectClassName}>
-                <option value="">Selecione</option>
-                {athletes.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <AthletePicker
+              name="athlete_id"
+              id="athlete_id"
+              label="Atleta"
+              required
+              athletes={athletes}
+            />
             <div className="space-y-2">
               <Label htmlFor="stage_id">Etapa</Label>
               <select id="stage_id" name="stage_id" required className={selectClassName}>
@@ -118,7 +135,13 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="series">Série</Label>
-              <select id="series" name="series" required className={selectClassName} defaultValue="ouro">
+              <select
+                id="series"
+                name="series"
+                required
+                className={selectClassName}
+                defaultValue="ouro"
+              >
                 {(Object.keys(SERIES_LABELS) as Series[]).map((series) => (
                   <option key={series} value={series}>
                     {SERIES_LABELS[series]}
@@ -137,93 +160,117 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <Button type="submit">Calcular pontos e salvar</Button>
+              <Button type="submit" className="h-11 md:h-9">
+                Calcular pontos e salvar
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
 
-      <ul className="space-y-2 md:hidden">
-        {results.map((result) => {
-          const athlete = result.athletes as { name?: string } | null;
-          const stage = result.stages as { title?: string } | null;
-          const category = result.category as ResultCategory | undefined;
-          const level = result.level as ResultLevel | undefined;
-          return (
-            <li key={result.id as string} className="rounded-xl border bg-card p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">{athlete?.name ?? "—"}</p>
-                  <p className="text-sm text-muted-foreground">{stage?.title ?? "—"}</p>
-                  <p className="mt-1 text-sm">
-                    {category ? CATEGORY_LABELS[category] : "—"}
-                    {" · "}
-                    {level ? LEVEL_LABELS[level] : "—"}
-                    {" · "}
-                    {result.series as string}
-                    {(result.placement as number | null) != null
-                      ? ` ${result.placement as number}º`
-                      : ""}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <p className="font-semibold tabular-nums">{result.points as number} pts</p>
-                  <form action={deleteResultAction}>
-                    <input type="hidden" name="id" value={result.id as string} />
-                    <Button type="submit" variant="ghost" size="sm" className="h-11 px-3">
-                      Excluir
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <ListSearch
+        action="/admin/resultados"
+        q={q}
+        placeholder="Buscar por atleta ou etapa…"
+      />
 
-      <div className="hidden rounded-xl border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Atleta</TableHead>
-              <TableHead>Etapa</TableHead>
-              <TableHead>Cat.</TableHead>
-              <TableHead>Nível</TableHead>
-              <TableHead>Série</TableHead>
-              <TableHead>Col.</TableHead>
-              <TableHead className="text-right">Pts</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {results.map((result) => {
+      {paginated.total === 0 ? (
+        <p className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+          {q ? "Nenhum resultado encontrado." : "Nenhum resultado lançado."}
+        </p>
+      ) : (
+        <>
+          <ul className="space-y-2 md:hidden">
+            {paginated.items.map((result) => {
               const athlete = result.athletes as { name?: string } | null;
               const stage = result.stages as { title?: string } | null;
               const category = result.category as ResultCategory | undefined;
               const level = result.level as ResultLevel | undefined;
               return (
-                <TableRow key={result.id as string}>
-                  <TableCell>{athlete?.name ?? "—"}</TableCell>
-                  <TableCell>{stage?.title ?? "—"}</TableCell>
-                  <TableCell>{category ? CATEGORY_LABELS[category] : "—"}</TableCell>
-                  <TableCell>{level ? LEVEL_LABELS[level] : "—"}</TableCell>
-                  <TableCell>{result.series as string}</TableCell>
-                  <TableCell>{(result.placement as number | null) ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{result.points as number}</TableCell>
-                  <TableCell className="text-right">
-                    <form action={deleteResultAction}>
-                      <input type="hidden" name="id" value={result.id as string} />
-                      <Button type="submit" variant="ghost" size="sm">
-                        Excluir
-                      </Button>
-                    </form>
-                  </TableCell>
-                </TableRow>
+                <li key={result.id as string} className="rounded-xl border bg-card p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{athlete?.name ?? "—"}</p>
+                      <p className="text-sm text-muted-foreground">{stage?.title ?? "—"}</p>
+                      <p className="mt-1 text-sm">
+                        {category ? CATEGORY_LABELS[category] : "—"}
+                        {" · "}
+                        {level ? LEVEL_LABELS[level] : "—"}
+                        {" · "}
+                        {result.series as string}
+                        {(result.placement as number | null) != null
+                          ? ` ${result.placement as number}º`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <p className="font-semibold tabular-nums">{result.points as number} pts</p>
+                      <form action={deleteResultAction}>
+                        <input type="hidden" name="id" value={result.id as string} />
+                        <Button type="submit" variant="ghost" size="sm" className="h-11 px-3">
+                          Excluir
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                </li>
               );
             })}
-          </TableBody>
-        </Table>
-      </div>
+          </ul>
+
+          <div className="hidden rounded-xl border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Atleta</TableHead>
+                  <TableHead>Etapa</TableHead>
+                  <TableHead>Cat.</TableHead>
+                  <TableHead>Nível</TableHead>
+                  <TableHead>Série</TableHead>
+                  <TableHead>Col.</TableHead>
+                  <TableHead className="text-right">Pts</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.items.map((result) => {
+                  const athlete = result.athletes as { name?: string } | null;
+                  const stage = result.stages as { title?: string } | null;
+                  const category = result.category as ResultCategory | undefined;
+                  const level = result.level as ResultLevel | undefined;
+                  return (
+                    <TableRow key={result.id as string}>
+                      <TableCell>{athlete?.name ?? "—"}</TableCell>
+                      <TableCell>{stage?.title ?? "—"}</TableCell>
+                      <TableCell>{category ? CATEGORY_LABELS[category] : "—"}</TableCell>
+                      <TableCell>{level ? LEVEL_LABELS[level] : "—"}</TableCell>
+                      <TableCell>{result.series as string}</TableCell>
+                      <TableCell>{(result.placement as number | null) ?? "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {result.points as number}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <form action={deleteResultAction}>
+                          <input type="hidden" name="id" value={result.id as string} />
+                          <Button type="submit" variant="ghost" size="sm">
+                            Excluir
+                          </Button>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationControls
+            path="/admin/resultados"
+            paginated={paginated}
+            params={{ q }}
+          />
+        </>
+      )}
     </div>
   );
 }
