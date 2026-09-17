@@ -5,6 +5,7 @@ import { setAthletePasswordAction } from "@/features/account/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -26,7 +27,7 @@ export function SetPasswordForm() {
           name="password"
           type="password"
           required
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
           autoComplete="new-password"
         />
       </div>
@@ -37,7 +38,7 @@ export function SetPasswordForm() {
           name="password_confirm"
           type="password"
           required
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
           autoComplete="new-password"
         />
       </div>

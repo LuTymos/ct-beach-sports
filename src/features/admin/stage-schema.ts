@@ -16,7 +16,29 @@ export const stageFormSchema = z.object({
     .trim()
     .optional()
     .transform((value) => value || null)
-    .pipe(z.union([z.null(), z.url({ error: "URL de auditoria inválida" })])),
+    .pipe(
+      z.union([
+        z.null(),
+        z
+          .url({ error: "URL de auditoria inválida" })
+          .refine(
+            (value) => {
+              try {
+                const url = new URL(value);
+                return (
+                  url.protocol === "https:" &&
+                  !url.username &&
+                  !url.password &&
+                  Boolean(url.hostname)
+                );
+              } catch {
+                return false;
+              }
+            },
+            { error: "URL de auditoria deve ser https" }
+          ),
+      ])
+    ),
   sort_order: z.coerce.number().int().default(0),
 });
 

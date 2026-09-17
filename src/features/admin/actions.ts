@@ -4,25 +4,27 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminUser } from "@/lib/supabase/is-admin";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 import { calculatePoints, isParticipationOnly, type Placement, type Series } from "@/lib/scoring";
 import { isResultCategory, isResultLevel } from "@/lib/categories";
-import { parseImportCsv } from "@/features/admin/import-csv";
+import { MAX_IMPORT_ROWS, parseImportCsv } from "@/features/admin/import-csv";
+import { setAdminFlashError } from "@/features/admin/flash-error";
 import { stageFormSchema, updateStageFormSchema } from "@/features/admin/stage-schema";
+import { errorQuery, type ErrorCode } from "@/lib/flash-errors";
+import { consumeRateLimit, LOGIN_RATE, rateLimitKey } from "@/lib/rate-limit";
 
 const MAX_IMPORT_BYTES = 512 * 1024;
+const CSV_TYPES = new Set([
+  "",
+  "text/csv",
+  "text/plain",
+  "application/csv",
+  "application/vnd.ms-excel",
+]);
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user || !isAdminUser(user)) {
-    redirect("/admin/login");
-  }
-
-  return supabase;
+function fail(path: string, code: ErrorCode): never {
+  const sep = path.includes("?") ? "&" : "?";
+  redirect(`${path}${sep}${errorQuery(code)}`);
 }
 
 function stageFieldsFromForm(formData: FormData) {
@@ -46,14 +48,29 @@ function revalidateStagePaths(stageId?: string) {
   }
 }
 
-export async function loginAction(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const supabase = await createClient();
+function isCsvUpload(file: File): boolean {
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return name.endsWith(".csv") && CSV_TYPES.has(type);
+}
 
+export async function loginAction(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const key = await rateLimitKey(["login-admin", email]);
+  const allowed = await consumeRateLimit({
+    bucket: "login-admin",
+    key,
+    ...LOGIN_RATE,
+  });
+  if (!allowed) {
+    fail("/admin/login", "locked");
+  }
+
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(`/admin/login?error=${encodeURIComponent(error.message)}`);
+    fail("/admin/login", "login");
   }
 
   const {
@@ -61,7 +78,7 @@ export async function loginAction(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!isAdminUser(user)) {
     await supabase.auth.signOut();
-    redirect("/admin/login?error=" + encodeURIComponent("Sem permissão de admin"));
+    fail("/admin/login", "login");
   }
 
   redirect("/admin");
@@ -74,13 +91,13 @@ export async function logoutAction() {
 }
 
 export async function createAthleteAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const team = String(formData.get("team") ?? "").trim() || null;
-  if (!name) redirect("/admin/atletas?error=Nome+obrigatorio");
+  if (!name) fail("/admin/atletas", "name");
 
-  const supabase = await requireAdmin();
   const { error } = await supabase.from("athletes").insert({ name, team });
-  if (error) redirect(`/admin/atletas?error=${encodeURIComponent(error.message)}`);
+  if (error) fail("/admin/atletas", "failed");
 
   revalidatePath("/");
   revalidatePath("/admin/atletas");
@@ -88,46 +105,47 @@ export async function createAthleteAction(formData: FormData) {
 }
 
 export async function createStageAction(formData: FormData) {
+  await requireAdmin();
   const parsed = stageFormSchema.safeParse(stageFieldsFromForm(formData));
   if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
-    redirect(`/admin/etapas?error=${encodeURIComponent(message)}`);
+    fail("/admin/etapas", "invalid");
   }
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireAdmin();
   const { error } = await supabase.from("stages").insert(parsed.data);
-  if (error) redirect(`/admin/etapas?error=${encodeURIComponent(error.message)}`);
+  if (error) fail("/admin/etapas", "failed");
 
   revalidateStagePaths();
   redirect("/admin/etapas");
 }
 
 export async function updateStageAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
   const parsed = updateStageFormSchema.safeParse({
-    id: String(formData.get("id") ?? ""),
+    id,
     ...stageFieldsFromForm(formData),
   });
 
+  const target = id ? `/admin/etapas/${id}` : "/admin/etapas";
   if (!parsed.success) {
-    const id = String(formData.get("id") ?? "");
-    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
-    const target = id ? `/admin/etapas/${id}` : "/admin/etapas";
-    redirect(`${target}?error=${encodeURIComponent(message)}`);
+    fail(target, "invalid");
   }
 
-  const { id, ...fields } = parsed.data;
-  const supabase = await requireAdmin();
-  const { error } = await supabase.from("stages").update(fields).eq("id", id);
+  const { id: stageId, ...fields } = parsed.data;
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.from("stages").update(fields).eq("id", stageId);
 
   if (error) {
-    redirect(`/admin/etapas/${id}?error=${encodeURIComponent(error.message)}`);
+    fail(`/admin/etapas/${stageId}`, "failed");
   }
 
-  revalidateStagePaths(id);
+  revalidateStagePaths(stageId);
   redirect("/admin/etapas?updated=1");
 }
 
 export async function createResultAction(formData: FormData) {
+  await requireAdmin();
   const athlete_id = String(formData.get("athlete_id") ?? "");
   const stage_id = String(formData.get("stage_id") ?? "");
   const categoryRaw = String(formData.get("category") ?? "");
@@ -136,11 +154,11 @@ export async function createResultAction(formData: FormData) {
   const placementRaw = String(formData.get("placement") ?? "");
 
   if (!athlete_id || !stage_id || !series || !categoryRaw || !levelRaw) {
-    redirect("/admin/resultados?error=Preencha+todos+os+campos");
+    fail("/admin/resultados", "invalid");
   }
 
   if (!isResultCategory(categoryRaw) || !isResultLevel(levelRaw)) {
-    redirect("/admin/resultados?error=Categoria+ou+nivel+invalido");
+    fail("/admin/resultados", "category");
   }
 
   const placement: Placement | null =
@@ -149,18 +167,17 @@ export async function createResultAction(formData: FormData) {
       : (Number(placementRaw) as Placement);
 
   if (!isParticipationOnly(series) && placement == null) {
-    redirect("/admin/resultados?error=Informe+a+colocacao+1-4");
+    fail("/admin/resultados", "placement");
   }
 
   let points: number;
   try {
     points = calculatePoints(series, placement);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Pontuacao invalida";
-    redirect(`/admin/resultados?error=${encodeURIComponent(message)}`);
+  } catch {
+    fail("/admin/resultados", "points");
   }
 
-  const supabase = await requireAdmin();
+  const { supabase } = await requireAdmin();
   const { error } = await supabase.from("results").insert({
     athlete_id,
     stage_id,
@@ -171,7 +188,7 @@ export async function createResultAction(formData: FormData) {
     points,
   });
 
-  if (error) redirect(`/admin/resultados?error=${encodeURIComponent(error.message)}`);
+  if (error) fail("/admin/resultados", "failed");
 
   revalidatePath("/");
   revalidatePath(`/etapas/${stage_id}`);
@@ -181,10 +198,10 @@ export async function createResultAction(formData: FormData) {
 }
 
 export async function deleteResultAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  const supabase = await requireAdmin();
   await supabase.from("results").delete().eq("id", id);
 
   revalidatePath("/");
@@ -193,21 +210,24 @@ export async function deleteResultAction(formData: FormData) {
 }
 
 export async function importStageResultsAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const stage_id = String(formData.get("stage_id") ?? "").trim();
   const file = formData.get("file");
 
   if (!stage_id) {
-    redirect("/admin/importacao?error=" + encodeURIComponent("Selecione a etapa"));
+    fail("/admin/importacao", "stage");
   }
 
   if (!(file instanceof File) || file.size === 0) {
-    redirect("/admin/importacao?error=" + encodeURIComponent("Envie um arquivo CSV"));
+    fail("/admin/importacao", "file");
   }
 
   if (file.size > MAX_IMPORT_BYTES) {
-    redirect(
-      "/admin/importacao?error=" + encodeURIComponent("CSV muito grande (max 512 KB)")
-    );
+    fail("/admin/importacao", "csv_size");
+  }
+
+  if (!isCsvUpload(file)) {
+    fail("/admin/importacao", "csv_type");
   }
 
   const text = await file.text();
@@ -216,10 +236,13 @@ export async function importStageResultsAction(formData: FormData) {
     const preview = parsed.errors.slice(0, 8).join(" | ");
     const extra =
       parsed.errors.length > 8 ? ` (+${parsed.errors.length - 8} erros)` : "";
-    redirect(`/admin/importacao?error=${encodeURIComponent(preview + extra)}`);
+    await setAdminFlashError(preview + extra);
+    fail("/admin/importacao", "import");
   }
 
-  const supabase = await requireAdmin();
+  if (parsed.rows.length > MAX_IMPORT_ROWS) {
+    fail("/admin/importacao", "csv_rows");
+  }
 
   const { data: stage, error: stageError } = await supabase
     .from("stages")
@@ -228,7 +251,7 @@ export async function importStageResultsAction(formData: FormData) {
     .maybeSingle();
 
   if (stageError || !stage) {
-    redirect("/admin/importacao?error=" + encodeURIComponent("Etapa nao encontrada"));
+    fail("/admin/importacao", "not_found");
   }
 
   const { data: existingAthletes, error: athletesError } = await supabase
@@ -236,7 +259,7 @@ export async function importStageResultsAction(formData: FormData) {
     .select("id, name");
 
   if (athletesError) {
-    redirect(`/admin/importacao?error=${encodeURIComponent(athletesError.message)}`);
+    fail("/admin/importacao", "failed");
   }
 
   const byName = new Map<string, string[]>();
@@ -252,12 +275,8 @@ export async function importStageResultsAction(formData: FormData) {
   for (const name of neededNames) {
     const matches = byName.get(name) ?? [];
     if (matches.length > 1) {
-      redirect(
-        "/admin/importacao?error=" +
-          encodeURIComponent(
-            `Nome duplicado no cadastro: "${name}". Unifique antes de importar.`
-          )
-      );
+      await setAdminFlashError(`Nome duplicado no cadastro: "${name}". Unifique antes de importar.`);
+      fail("/admin/importacao", "import");
     }
     if (matches.length === 1) continue;
 
@@ -268,9 +287,7 @@ export async function importStageResultsAction(formData: FormData) {
       .single();
 
     if (error || !created) {
-      redirect(
-        `/admin/importacao?error=${encodeURIComponent(error?.message ?? "Falha ao criar atleta")}`
-      );
+      fail("/admin/importacao", "failed");
     }
 
     byName.set(created.name, [created.id]);
@@ -283,7 +300,7 @@ export async function importStageResultsAction(formData: FormData) {
     .eq("stage_id", stage_id);
 
   if (resultsError) {
-    redirect(`/admin/importacao?error=${encodeURIComponent(resultsError.message)}`);
+    fail("/admin/importacao", "failed");
   }
 
   const existingKeys = new Set(
@@ -307,10 +324,8 @@ export async function importStageResultsAction(formData: FormData) {
   for (const row of parsed.rows) {
     const athleteId = byName.get(row.athlete)?.[0];
     if (!athleteId) {
-      redirect(
-        "/admin/importacao?error=" +
-          encodeURIComponent(`Atleta nao resolvido: ${row.athlete}`)
-      );
+      await setAdminFlashError(`Atleta não resolvido: ${row.athlete}`);
+      fail("/admin/importacao", "import");
     }
 
     const key = `${athleteId}|${row.category}|${row.level}|${row.series}|${row.placement ?? ""}`;
@@ -334,7 +349,7 @@ export async function importStageResultsAction(formData: FormData) {
   if (toInsert.length > 0) {
     const { error: insertError } = await supabase.from("results").insert(toInsert);
     if (insertError) {
-      redirect(`/admin/importacao?error=${encodeURIComponent(insertError.message)}`);
+      fail("/admin/importacao", "failed");
     }
   }
 

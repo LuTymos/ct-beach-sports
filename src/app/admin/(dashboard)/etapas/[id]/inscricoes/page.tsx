@@ -9,7 +9,7 @@ import {
   toggleMemberPaidAction,
 } from "@/features/entries/actions";
 import { getStageEntriesAdmin } from "@/features/entries/queries";
-import { getAthletes, getStageById } from "@/features/ranking/queries";
+import { getAthletesAdmin, getStageById } from "@/features/ranking/queries";
 import {
   CATEGORY_LABELS,
   LEVEL_LABELS,
@@ -19,6 +19,7 @@ import {
 import { SERIES_LABELS, formatResultLabel } from "@/lib/scoring";
 import { AthletePicker } from "@/components/athlete-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +57,7 @@ export default async function AdminStageEntriesPage({ params, searchParams }: Pa
 
   const [entries, athletes] = await Promise.all([
     getStageEntriesAdmin(id),
-    getAthletes(),
+    getAthletesAdmin(),
   ]);
 
   const activeAthletes = athletes.filter((a) => a.active);
@@ -84,11 +85,7 @@ export default async function AdminStageEntriesPage({ params, searchParams }: Pa
         </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} />
       {ok === "1" && (
         <Alert>
           <AlertDescription>Dupla inscrita.</AlertDescription>

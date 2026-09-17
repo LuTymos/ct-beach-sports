@@ -1,7 +1,7 @@
 import { SetPasswordForm } from "@/features/account/set-password-form";
 import { getSessionUser, isAdminUser } from "@/lib/supabase/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { redirect } from "next/navigation";
 
 type PageProps = {
@@ -13,10 +13,7 @@ export default async function SetPasswordPage({ searchParams }: PageProps) {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect(
-      "/conta/login?error=" +
-        encodeURIComponent("Abra o link novo do convite para definir a senha.")
-    );
+    redirect("/conta/login?error=session");
   }
 
   if (isAdminUser(user)) {
@@ -32,17 +29,12 @@ export default async function SetPasswordPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      {error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Não foi possível salvar</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
+      <MappedErrorAlert error={error} title="Não foi possível salvar" />
 
       <Card>
         <CardHeader>
           <CardTitle>Nova senha</CardTitle>
-          <CardDescription>Mínimo de 6 caracteres. Toque em salvar só uma vez.</CardDescription>
+          <CardDescription>Mínimo de 10 caracteres, com letras e números. Toque em salvar só uma vez.</CardDescription>
         </CardHeader>
         <CardContent>
           <SetPasswordForm />

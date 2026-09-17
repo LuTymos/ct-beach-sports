@@ -36,6 +36,8 @@ export type ImportCsvParseFailure = {
 
 const REQUIRED_HEADERS = ["atleta", "categoria", "nivel", "serie", "colocacao"] as const;
 
+export const MAX_IMPORT_ROWS = 400;
+
 function detectDelimiter(headerLine: string): "," | ";" {
   const commas = (headerLine.match(/,/g) ?? []).length;
   const semis = (headerLine.match(/;/g) ?? []).length;
@@ -106,11 +108,23 @@ function parsePlacement(raw: string, series: Series): Placement | null {
  * Headers: atleta,categoria,nivel,serie,colocacao (`,` or `;`).
  */
 export function parseImportCsv(text: string): ImportCsvParseSuccess | ImportCsvParseFailure {
+  if (text.includes("\u0000")) {
+    return { ok: false, errors: ["CSV deve ser texto (arquivo binário recusado)"] };
+  }
+
   const cleaned = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const lines = cleaned.split("\n").filter((line) => line.trim().length > 0);
 
   if (lines.length < 2) {
     return { ok: false, errors: ["CSV vazio ou sem linhas de dados"] };
+  }
+
+  const dataLineCount = lines.length - 1;
+  if (dataLineCount > MAX_IMPORT_ROWS) {
+    return {
+      ok: false,
+      errors: [`CSV com demasiadas linhas (máx. ${MAX_IMPORT_ROWS} dados)`],
+    };
   }
 
   const delimiter = detectDelimiter(lines[0]);

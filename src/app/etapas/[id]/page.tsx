@@ -22,6 +22,7 @@ import {
 } from "@/lib/categories";
 import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
 import { paginate } from "@/lib/paginate";
+import { safeHttpsHref } from "@/lib/safe-url";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -88,11 +89,11 @@ export default async function StageDetailPage({ params, searchParams }: PageProp
           {format(parseISO(stage.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           {stage.location ? ` · ${stage.location}` : ""}
         </p>
-        {stage.audit_url && (
+        {safeHttpsHref(stage.audit_url) && (
           <a
-            href={stage.audit_url}
+            href={safeHttpsHref(stage.audit_url)!}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="text-sm text-primary underline-offset-4 hover:underline"
           >
             Link de registro / auditoria

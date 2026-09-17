@@ -1,15 +1,15 @@
-import type { NextConfig } from "next";
+import { getSupabaseUrl } from "./supabase/config";
 
-function contentSecurityPolicy(): string {
+export function contentSecurityPolicy(): string {
   let connect = "'self'";
-  const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (supabase) {
-    try {
+  try {
+    const supabase = getSupabaseUrl();
+    if (supabase) {
       const origin = new URL(supabase).origin;
       connect = `'self' ${origin} ${origin.replace("https://", "wss://")}`;
-    } catch {
-      // env inválida
     }
+  } catch {
+    // env ausente no build
   }
 
   return [
@@ -27,30 +27,30 @@ function contentSecurityPolicy(): string {
   ].join("; ");
 }
 
-function securityHeaders(referrerPolicy = "strict-origin-when-cross-origin") {
-  return [
+export function securityHeaders(opts?: { referrerPolicy?: string }): { key: string; value: string }[] {
+  const headers = [
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "X-Frame-Options", value: "DENY" },
-    { key: "Referrer-Policy", value: referrerPolicy },
+    { key: "Referrer-Policy", value: opts?.referrerPolicy ?? "strict-origin-when-cross-origin" },
     { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
     { key: "Content-Security-Policy", value: contentSecurityPolicy() },
-    { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   ];
+
+  if (process.env.NODE_ENV === "production") {
+    headers.push({
+      key: "Strict-Transport-Security",
+      value: "max-age=63072000; includeSubDomains",
+    });
+  }
+
+  return headers;
 }
 
-const nextConfig: NextConfig = {
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: securityHeaders(),
-      },
-      {
-        source: "/conta/ativar",
-        headers: securityHeaders("no-referrer"),
-      },
-    ];
-  },
-};
-
-export default nextConfig;
+export function applySecurityHeaders(
+  headers: Headers,
+  opts?: { referrerPolicy?: string }
+) {
+  for (const { key, value } of securityHeaders(opts)) {
+    headers.set(key, value);
+  }
+}

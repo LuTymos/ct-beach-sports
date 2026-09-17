@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
+import { isAdminUser } from "@/lib/supabase/is-admin";
 import {
   RESULT_CATEGORIES,
   type ResultCategory,
@@ -118,24 +119,11 @@ export async function getStageById(id: string): Promise<Stage | null> {
   return data as Stage | null;
 }
 
-/** Public columns only — never select email/user_id for anon/authenticated clients. */
+/** Public columns only — never select email/user_id; never use service_role. */
 const ATHLETE_PUBLIC_COLUMNS = "id, name, team, active, created_at";
 
 export async function getAthletes(): Promise<Athlete[]> {
   if (!isSupabaseConfigured()) return [];
-
-  // Admin list needs email/user_id — service role (after migration 009 those cols are revoked from API roles)
-  if (hasServiceRoleKey()) {
-    const service = createServiceClient();
-    const { data, error } = await service
-      .from("athletes")
-      .select("id, name, team, email, user_id, active, created_at")
-      .eq("active", true)
-      .order("name", { ascending: true });
-    if (error) throw error;
-    return (data ?? []) as Athlete[];
-  }
-
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("athletes")
@@ -148,6 +136,29 @@ export async function getAthletes(): Promise<Athlete[]> {
     email: null,
     user_id: null,
   }));
+}
+
+/** Admin list with email/user_id — service_role only after getUser + isAdminUser. */
+export async function getAthletesAdmin(): Promise<Athlete[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isAdminUser(user)) {
+    throw new Error("Admin required");
+  }
+  if (!hasServiceRoleKey()) {
+    return getAthletes();
+  }
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("athletes")
+    .select("id, name, team, email, user_id, active, created_at")
+    .eq("active", true)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Athlete[];
 }
 
 export async function getAthleteById(id: string): Promise<Athlete | null> {

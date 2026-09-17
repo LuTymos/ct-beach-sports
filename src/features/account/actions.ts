@@ -3,27 +3,46 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
+import { createAdminServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
 import { isAdminUser } from "@/lib/supabase/is-admin";
 import { getLinkedAthlete, getSessionUser } from "@/lib/supabase/auth";
 import { setInviteLinkFlash } from "@/features/account/invite-link-flash";
+import { requireAdmin } from "@/lib/supabase/require-admin";
+import { errorQuery, type ErrorCode } from "@/lib/flash-errors";
+import { consumeRateLimit, LOGIN_RATE, rateLimitKey } from "@/lib/rate-limit";
+import { validatePassword } from "@/lib/password";
+import { safeInternalPath, siteOrigin } from "@/lib/safe-url";
 
 function athletePath(id: string, query?: string) {
   return query ? `/atletas/${id}?${query}` : `/atletas/${id}`;
 }
 
+function fail(path: string, code: ErrorCode): never {
+  const sep = path.includes("?") ? "&" : "?";
+  redirect(`${path}${sep}${errorQuery(code)}`);
+}
+
 export async function athleteLoginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const key = await rateLimitKey(["login-athlete", email.toLowerCase()]);
+  const allowed = await consumeRateLimit({
+    bucket: "login-athlete",
+    key,
+    ...LOGIN_RATE,
+  });
+  if (!allowed) {
+    fail("/conta/login", "locked");
+  }
 
   if (!email || !password) {
-    redirect("/conta/login?error=" + encodeURIComponent("Informe e-mail e senha"));
+    fail("/conta/login", "invalid");
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(`/conta/login?error=${encodeURIComponent(error.message)}`);
+    fail("/conta/login", "login");
   }
 
   const {
@@ -31,7 +50,7 @@ export async function athleteLoginAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/conta/login?error=" + encodeURIComponent("Falha no login"));
+    fail("/conta/login", "login");
   }
 
   if (isAdminUser(user)) {
@@ -43,10 +62,7 @@ export async function athleteLoginAction(formData: FormData) {
     redirect(`/atletas/${linked.id}`);
   }
 
-  redirect(
-    "/conta/login?error=" +
-      encodeURIComponent("Conta ainda não vinculada a um atleta. Peça o convite ao professor.")
-  );
+  fail("/conta/login", "forbidden");
 }
 
 export async function athleteLogoutAction() {
@@ -56,17 +72,17 @@ export async function athleteLogoutAction() {
 }
 
 export async function updateOwnAthleteProfileAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || isAdminUser(user)) {
+    redirect("/conta/login");
+  }
+
   const id = String(formData.get("id") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const team = String(formData.get("team") ?? "").trim() || null;
 
   if (!id) redirect("/");
-  if (!name) redirect(athletePath(id, "error=" + encodeURIComponent("Nome obrigatório")));
-
-  const user = await getSessionUser();
-  if (!user || isAdminUser(user)) {
-    redirect("/conta/login");
-  }
+  if (!name) fail(athletePath(id), "name");
 
   const supabase = await createClient();
   const { data: athlete } = await supabase
@@ -76,7 +92,7 @@ export async function updateOwnAthleteProfileAction(formData: FormData) {
     .maybeSingle();
 
   if (!athlete || athlete.user_id !== user.id) {
-    redirect(athletePath(id, "error=" + encodeURIComponent("Sem permissão para editar")));
+    fail(athletePath(id), "forbidden");
   }
 
   const { error } = await supabase
@@ -86,7 +102,7 @@ export async function updateOwnAthleteProfileAction(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) {
-    redirect(athletePath(id, `error=${encodeURIComponent(error.message)}`));
+    fail(athletePath(id), "failed");
   }
 
   revalidatePath(`/atletas/${id}`);
@@ -95,16 +111,13 @@ export async function updateOwnAthleteProfileAction(formData: FormData) {
   redirect(athletePath(id, "ok=1"));
 }
 
-function siteOrigin() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-  ).replace(/\/$/, "");
+function siteOriginSafe() {
+  return siteOrigin();
 }
 
 function inviteRedirectTo() {
-  // Still used for e-mail invites (Supabase template). Generated WhatsApp links use /conta/ativar.
-  return `${siteOrigin()}/auth/callback?next=${encodeURIComponent("/conta/definir-senha")}`;
+  const next = safeInternalPath("/conta/definir-senha", "/conta/definir-senha");
+  return `${siteOriginSafe()}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
 function buildActivateLink(tokenHash: string, type: "invite" | "recovery") {
@@ -112,11 +125,12 @@ function buildActivateLink(tokenHash: string, type: "invite" | "recovery") {
     token_hash: tokenHash,
     type,
   });
-  return `${siteOrigin()}/conta/ativar?${params.toString()}`;
+  // Hash so token is not sent as Referer or in server logs of the first GET.
+  return `${siteOriginSafe()}/conta/ativar#${params.toString()}`;
 }
 
 async function findAuthUserByEmail(email: string) {
-  const service = createServiceClient();
+  const service = await createAdminServiceClient();
   const normalized = email.toLowerCase();
   let page = 1;
   for (;;) {
@@ -134,17 +148,9 @@ function isEmailRateLimit(message: string) {
 }
 
 async function requireAdminForInvite() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminUser(user)) redirect("/admin/login");
+  const { supabase } = await requireAdmin();
   if (!hasServiceRoleKey()) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent(
-        "Configure SUPABASE_SERVICE_ROLE_KEY no .env.local para convidar atletas"
-      )}`
-    );
+    fail("/admin/atletas", "failed");
   }
   return supabase;
 }
@@ -157,20 +163,18 @@ async function generateInviteLinkAndBind(opts: {
 }) {
   const { athleteId, email, note } = opts;
   const supabase = await createClient();
-  const service = createServiceClient();
+  const service = await createAdminServiceClient();
   const redirectTo = inviteRedirectTo();
 
   let existing = await findAuthUserByEmail(email);
   if (existing && isAdminUser(existing)) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent("Este e-mail é de um admin — use outro")}`
-    );
+    fail("/admin/atletas", "forbidden");
   }
 
   if (existing && !existing.last_sign_in_at) {
     const { error: deleteError } = await service.auth.admin.deleteUser(existing.id);
     if (deleteError) {
-      redirect(`/admin/atletas?error=${encodeURIComponent(deleteError.message)}`);
+      fail("/admin/atletas", "failed");
     }
     existing = null;
   }
@@ -193,11 +197,7 @@ async function generateInviteLinkAndBind(opts: {
 
   const tokenHash = data?.properties?.hashed_token;
   if (error || !data?.user?.id || !tokenHash) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent(
-        error?.message ?? "Não foi possível gerar o link de convite"
-      )}`
-    );
+    fail("/admin/atletas", "failed");
   }
 
   const { error: linkError } = await supabase
@@ -206,13 +206,12 @@ async function generateInviteLinkAndBind(opts: {
     .eq("id", athleteId);
 
   if (linkError) {
-    redirect(`/admin/atletas?error=${encodeURIComponent(linkError.message)}`);
+    fail("/admin/atletas", "failed");
   }
 
   revalidatePath("/admin/atletas");
   revalidatePath(`/atletas/${athleteId}`);
 
-  // Our /conta/ativar page verifies only on button tap — avoids Gmail/Google burning the OTP.
   await setInviteLinkFlash(buildActivateLink(tokenHash, linkType));
 
   const prefix =
@@ -223,17 +222,14 @@ async function generateInviteLinkAndBind(opts: {
 
 /** Invite or re-send: creates Auth user if needed, always sends a fresh e-mail when possible. */
 export async function inviteAthleteAction(formData: FormData) {
+  const supabase = await requireAdminForInvite();
   const athleteId = String(formData.get("athlete_id") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!athleteId) redirect("/admin/atletas");
   if (!email || !email.includes("@")) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent("Informe um e-mail válido para convidar")}`
-    );
+    fail("/admin/atletas", "invalid");
   }
-
-  const supabase = await requireAdminForInvite();
 
   const { data: athlete, error: athleteError } = await supabase
     .from("athletes")
@@ -242,7 +238,7 @@ export async function inviteAthleteAction(formData: FormData) {
     .maybeSingle();
 
   if (athleteError || !athlete) {
-    redirect(`/admin/atletas?error=${encodeURIComponent("Atleta não encontrado")}`);
+    fail("/admin/atletas", "not_found");
   }
 
   const { error: emailError } = await supabase
@@ -251,31 +247,27 @@ export async function inviteAthleteAction(formData: FormData) {
     .eq("id", athleteId);
 
   if (emailError) {
-    redirect(`/admin/atletas?error=${encodeURIComponent(emailError.message)}`);
+    fail("/admin/atletas", "failed");
   }
 
-  const service = createServiceClient();
+  const service = await createAdminServiceClient();
   const redirectTo = inviteRedirectTo();
 
   let existing = await findAuthUserByEmail(email);
 
   if (existing && isAdminUser(existing)) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent("Este e-mail é de um admin — use outro")}`
-    );
+    fail("/admin/atletas", "forbidden");
   }
 
-  // Never signed in → stale invite: delete Auth user and send a fresh invite e-mail
   if (existing && !existing.last_sign_in_at) {
     const { error: deleteError } = await service.auth.admin.deleteUser(existing.id);
     if (deleteError) {
-      redirect(`/admin/atletas?error=${encodeURIComponent(deleteError.message)}`);
+      fail("/admin/atletas", "failed");
     }
     existing = null;
   }
 
   if (existing) {
-    // Already used the account → password recovery e-mail
     const { error: resetError } = await service.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
@@ -287,7 +279,7 @@ export async function inviteAthleteAction(formData: FormData) {
           note: "Limite de e-mail do Supabase. Use este link (janela anônima):",
         });
       }
-      redirect(`/admin/atletas?error=${encodeURIComponent(resetError.message)}`);
+      fail("/admin/atletas", "failed");
     }
 
     const { error: linkError } = await supabase
@@ -296,7 +288,7 @@ export async function inviteAthleteAction(formData: FormData) {
       .eq("id", athleteId);
 
     if (linkError) {
-      redirect(`/admin/atletas?error=${encodeURIComponent(linkError.message)}`);
+      fail("/admin/atletas", "failed");
     }
 
     revalidatePath("/admin/atletas");
@@ -322,9 +314,7 @@ export async function inviteAthleteAction(formData: FormData) {
         note: "Limite de e-mail do Supabase. Use este link (janela anônima):",
       });
     }
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent(inviteError?.message ?? "Falha ao convidar")}`
-    );
+    fail("/admin/atletas", "failed");
   }
 
   const { error: linkError } = await supabase
@@ -333,7 +323,7 @@ export async function inviteAthleteAction(formData: FormData) {
     .eq("id", athleteId);
 
   if (linkError) {
-    redirect(`/admin/atletas?error=${encodeURIComponent(linkError.message)}`);
+    fail("/admin/atletas", "failed");
   }
 
   revalidatePath("/admin/atletas");
@@ -348,17 +338,14 @@ export async function inviteAthleteAction(formData: FormData) {
 
 /** Explicit no-email invite — use when Supabase hits "email rate limit exceeded". */
 export async function generateAthleteInviteLinkAction(formData: FormData) {
+  const supabase = await requireAdminForInvite();
   const athleteId = String(formData.get("athlete_id") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (!athleteId) redirect("/admin/atletas");
   if (!email || !email.includes("@")) {
-    redirect(
-      `/admin/atletas?error=${encodeURIComponent("Informe um e-mail válido para gerar o link")}`
-    );
+    fail("/admin/atletas", "invalid");
   }
-
-  const supabase = await requireAdminForInvite();
 
   const { data: athlete, error: athleteError } = await supabase
     .from("athletes")
@@ -367,7 +354,7 @@ export async function generateAthleteInviteLinkAction(formData: FormData) {
     .maybeSingle();
 
   if (athleteError || !athlete) {
-    redirect(`/admin/atletas?error=${encodeURIComponent("Atleta não encontrado")}`);
+    fail("/admin/atletas", "not_found");
   }
 
   const { error: emailError } = await supabase
@@ -376,28 +363,27 @@ export async function generateAthleteInviteLinkAction(formData: FormData) {
     .eq("id", athleteId);
 
   if (emailError) {
-    redirect(`/admin/atletas?error=${encodeURIComponent(emailError.message)}`);
+    fail("/admin/atletas", "failed");
   }
 
   await generateInviteLinkAndBind({ athleteId, email });
 }
 
 export async function setAthletePasswordAction(formData: FormData) {
-  const password = String(formData.get("password") ?? "");
-  const confirm = String(formData.get("password_confirm") ?? "");
-
-  if (password.length < 6) {
-    redirect(
-      "/conta/definir-senha?error=" + encodeURIComponent("Senha precisa ter ao menos 6 caracteres")
-    );
-  }
-  if (password !== confirm) {
-    redirect("/conta/definir-senha?error=" + encodeURIComponent("As senhas não coincidem"));
-  }
-
   const user = await getSessionUser();
   if (!user || isAdminUser(user)) {
     redirect("/conta/login");
+  }
+
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("password_confirm") ?? "");
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    fail("/conta/definir-senha", passwordError);
+  }
+  if (password !== confirm) {
+    fail("/conta/definir-senha", "mismatch");
   }
 
   const supabase = await createClient();
@@ -406,8 +392,6 @@ export async function setAthletePasswordAction(formData: FormData) {
   if (error) {
     const samePassword = /different from the old password/i.test(error.message);
 
-    // iOS often double-submits: first request already set the password; second gets this error.
-    // If sign-in works with the typed password, treat as success.
     if (samePassword && user.email) {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
@@ -417,15 +401,10 @@ export async function setAthletePasswordAction(formData: FormData) {
         const linked = await getLinkedAthlete();
         redirect(linked ? `/atletas/${linked.id}` : "/conta");
       }
-      redirect(
-        "/conta/definir-senha?error=" +
-          encodeURIComponent(
-            "Esta senha já estava definida. Escolha outra, ou entre em Conta → Entrar com e-mail e senha."
-          )
-      );
+      fail("/conta/definir-senha", "password_weak");
     }
 
-    redirect(`/conta/definir-senha?error=${encodeURIComponent(error.message)}`);
+    fail("/conta/definir-senha", "failed");
   }
 
   const linked = await getLinkedAthlete();
@@ -433,14 +412,9 @@ export async function setAthletePasswordAction(formData: FormData) {
 }
 
 export async function unlinkAthleteAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const athleteId = String(formData.get("athlete_id") ?? "").trim();
   if (!athleteId) redirect("/admin/atletas");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminUser(user)) redirect("/admin/login");
 
   const { error } = await supabase
     .from("athletes")
@@ -448,7 +422,7 @@ export async function unlinkAthleteAction(formData: FormData) {
     .eq("id", athleteId);
 
   if (error) {
-    redirect(`/admin/atletas?error=${encodeURIComponent(error.message)}`);
+    fail("/admin/atletas", "failed");
   }
 
   revalidatePath("/admin/atletas");

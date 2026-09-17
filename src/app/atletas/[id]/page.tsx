@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Button } from "@/components/ui/button";
 import { PaginationControls } from "@/components/pagination-controls";
 import { AthleteProfileEditor } from "@/features/account/athlete-profile-editor";
@@ -60,11 +61,7 @@ export default async function AthletePage({ params, searchParams }: PageProps) {
         ) : null}
       </div>
 
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
+      <MappedErrorAlert error={error} />
       {ok ? (
         <Alert>
           <AlertDescription>Perfil atualizado.</AlertDescription>

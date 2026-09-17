@@ -4,7 +4,7 @@ import { getContactTickets } from "@/features/contact/queries";
 import { TICKET_REASON_LABELS, type TicketReason } from "@/features/contact/reasons";
 import { ListSearch } from "@/components/list-search";
 import { PaginationControls } from "@/components/pagination-controls";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,11 +65,7 @@ export default async function AdminTicketsPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} />
 
       <div className="flex flex-wrap gap-2" role="navigation" aria-label="Status">
         {(

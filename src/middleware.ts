@@ -5,6 +5,9 @@ export async function middleware(request: NextRequest) {
   return updateSession(request);
 }
 
+/** Refresh session on all app routes (Supabase SSR matcher). */
 export const config = {
-  matcher: ["/admin/:path*", "/conta", "/conta/:path*", "/auth/callback"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

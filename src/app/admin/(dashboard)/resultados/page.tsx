@@ -2,7 +2,7 @@ import {
   createResultAction,
   deleteResultAction,
 } from "@/features/admin/actions";
-import { getAllResults, getAthletes, getStages } from "@/features/ranking/queries";
+import { getAllResults, getAthletesAdmin, getStages } from "@/features/ranking/queries";
 import {
   CATEGORY_LABELS,
   LEVEL_LABELS,
@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import { matchesSearch, parsePage, parseSearch } from "@/lib/list-params";
 import { paginate } from "@/lib/paginate";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
   const q = parseSearch(qRaw);
   const page = parsePage(pageRaw);
   const [athletes, stages, results] = await Promise.all([
-    getAthletes(),
+    getAthletesAdmin(),
     getStages(),
     getAllResults(),
   ]);
@@ -66,11 +67,7 @@ export default async function AdminResultsPage({ searchParams }: PageProps) {
         Participação = 5 pts sem colocação. Bronzinho = colocação 1–4, sempre 5 pts.
       </p>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} />
       {ok && (
         <Alert>
           <AlertDescription>{ok}</AlertDescription>

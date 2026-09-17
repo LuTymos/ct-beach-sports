@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MappedErrorAlert } from "@/components/mapped-error-alert";
 import Link from "next/link";
 
 type PageProps = {
@@ -26,12 +26,7 @@ export default async function AthleteLoginPage({ searchParams }: PageProps) {
 
       <AuthHashError />
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>Não foi possível entrar</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <MappedErrorAlert error={error} title="Não foi possível entrar" />
 
       <Card>
         <CardHeader>

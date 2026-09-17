@@ -3,10 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { contactTicketSchema } from "@/features/contact/schema";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminUser } from "@/lib/supabase/is-admin";
+import { createServiceClient, hasServiceRoleKey } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/supabase/require-admin";
+import { errorQuery, type ErrorCode } from "@/lib/flash-errors";
+import { consumeRateLimit, CONTACT_RATE, rateLimitKey } from "@/lib/rate-limit";
+
+function fail(path: string, code: ErrorCode): never {
+  const sep = path.includes("?") ? "&" : "?";
+  redirect(`${path}${sep}${errorQuery(code)}`);
+}
 
 export async function submitContactTicketAction(formData: FormData) {
+  const honeypot = String(formData.get("website") ?? "").trim();
+  if (honeypot) {
+    redirect("/contato?ok=1");
+  }
+
+  const key = await rateLimitKey(["contact"]);
+  const allowed = await consumeRateLimit({
+    bucket: "contact",
+    key,
+    ...CONTACT_RATE,
+  });
+  if (!allowed) {
+    fail("/contato", "rate");
+  }
+
   const parsed = contactTicketSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     reason: String(formData.get("reason") ?? ""),
@@ -14,19 +36,23 @@ export async function submitContactTicketAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message ?? "Dados inválidos";
-    redirect(`/contato?error=${encodeURIComponent(message)}`);
+    fail("/contato", "invalid");
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("contact_tickets").insert({
+  if (!hasServiceRoleKey()) {
+    fail("/contato", "failed");
+  }
+
+  const service = createServiceClient();
+  const { error } = await service.from("contact_tickets").insert({
     name: parsed.data.name,
     reason: parsed.data.reason,
     message: parsed.data.message,
+    status: "open",
   });
 
   if (error) {
-    redirect(`/contato?error=${encodeURIComponent(error.message)}`);
+    fail("/contato", "failed");
   }
 
   revalidatePath("/admin/tickets");
@@ -34,14 +60,9 @@ export async function submitContactTicketAction(formData: FormData) {
 }
 
 export async function markTicketDoneAction(formData: FormData) {
+  const { supabase } = await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) redirect("/admin/tickets?error=Ticket+inválido");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!isAdminUser(user)) redirect("/admin/login");
+  if (!id) fail("/admin/tickets", "invalid");
 
   const { error } = await supabase
     .from("contact_tickets")
@@ -49,7 +70,7 @@ export async function markTicketDoneAction(formData: FormData) {
     .eq("id", id);
 
   if (error) {
-    redirect(`/admin/tickets?error=${encodeURIComponent(error.message)}`);
+    fail("/admin/tickets", "failed");
   }
 
   revalidatePath("/admin/tickets");

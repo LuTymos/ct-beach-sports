@@ -56,7 +56,6 @@ export function AuthHashError() {
 
     setMessage(
       (errorCode && MESSAGES[errorCode]) ||
-        description ||
         "Link do e-mail inválido. Peça um novo convite ao professor."
     );
 
