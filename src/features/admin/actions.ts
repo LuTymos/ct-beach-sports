@@ -40,6 +40,7 @@ function stageFieldsFromForm(formData: FormData) {
 
 function revalidateStagePaths(stageId?: string) {
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/etapas");
   revalidatePath("/admin/etapas");
   if (stageId) {
@@ -100,6 +101,7 @@ export async function createAthleteAction(formData: FormData) {
   if (error) fail("/admin/atletas", "failed");
 
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/admin/atletas");
   redirect("/admin/atletas?ok=Atleta+cadastrado");
 }
@@ -191,6 +193,7 @@ export async function createResultAction(formData: FormData) {
   if (error) fail("/admin/resultados", "failed");
 
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath(`/etapas/${stage_id}`);
   revalidatePath(`/atletas/${athlete_id}`);
   revalidatePath("/admin/resultados");
@@ -205,6 +208,7 @@ export async function deleteResultAction(formData: FormData) {
   await supabase.from("results").delete().eq("id", id);
 
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/admin/resultados");
   redirect("/admin/resultados");
 }
@@ -354,6 +358,7 @@ export async function importStageResultsAction(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/etapas");
   revalidatePath(`/etapas/${stage_id}`);
   revalidatePath("/admin/resultados");

@@ -6,7 +6,7 @@ import {
   type ResultCategory,
   type ResultLevel,
 } from "@/lib/categories";
-import { buildRankingHref } from "@/features/ranking/ranking-href";
+import { RANKING_PATH, buildRankingHref } from "@/features/ranking/ranking-href";
 
 type LevelTabsProps = {
   active: ResultLevel | "todos";
@@ -20,7 +20,7 @@ const TABS: Array<{ value: ResultLevel | "todos"; label: string }> = [
   ...RESULT_LEVELS.map((level) => ({ value: level, label: LEVEL_LABELS[level] })),
 ];
 
-export function LevelTabs({ active, categoria, basePath = "/", q }: LevelTabsProps) {
+export function LevelTabs({ active, categoria, basePath = RANKING_PATH, q }: LevelTabsProps) {
   return (
     <div
       className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
