@@ -143,9 +143,8 @@ export default async function HomePage({ searchParams }: PageProps) {
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Como pontua?</h2>
           <p className="max-w-2xl text-muted-foreground">
-            Pódio nas séries {SERIES_LABELS.ouro}, {SERIES_LABELS.prata} e {SERIES_LABELS.bronze}.{" "}
-            {SERIES_LABELS.participacao} e {SERIES_LABELS.bronzinho} valem {PARTICIPATION_POINTS}{" "}
-            pts cada. O ranking completo está em{" "}
+            Pódio nas séries Ouro, Prata e Bronze. {SERIES_LABELS.participacao} e{" "}
+            {SERIES_LABELS.bronzinho} valem {PARTICIPATION_POINTS} pts cada. O ranking completo está em{" "}
             <Link href={RANKING_PATH} className="underline underline-offset-4">
               /ranking
             </Link>
