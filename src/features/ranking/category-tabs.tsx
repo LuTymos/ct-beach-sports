@@ -6,7 +6,7 @@ import {
   type ResultCategory,
   type ResultLevel,
 } from "@/lib/categories";
-import { buildRankingHref } from "@/features/ranking/ranking-href";
+import { RANKING_PATH, buildRankingHref } from "@/features/ranking/ranking-href";
 
 type CategoryTabsProps = {
   active: ResultCategory | "todos";
@@ -23,7 +23,7 @@ const TABS: Array<{ value: ResultCategory | "todos"; label: string }> = [
   })),
 ];
 
-export function CategoryTabs({ active, nivel, basePath = "/", q }: CategoryTabsProps) {
+export function CategoryTabs({ active, nivel, basePath = RANKING_PATH, q }: CategoryTabsProps) {
   return (
     <div
       className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"

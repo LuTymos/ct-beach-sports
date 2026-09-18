@@ -28,6 +28,7 @@ function fail(stageId: string, code: ErrorCode): never {
 
 function revalidateEntryPaths(stageId: string, athleteIds: string[] = []) {
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/etapas");
   revalidatePath(`/etapas/${stageId}`);
   revalidatePath("/admin/etapas");

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/safe-url.test.ts src/lib/password.test.ts src/lib/flash-errors.test.ts src/features/admin/import-csv.test.ts src/features/admin/stage-schema.test.ts"
+    "test": "tsx --test src/lib/safe-url.test.ts src/lib/password.test.ts src/lib/flash-errors.test.ts src/features/admin/import-csv.test.ts src/features/admin/stage-schema.test.ts src/features/ranking/ranking-href.test.ts src/features/ranking/pick-home-stage.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
