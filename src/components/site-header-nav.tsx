@@ -21,6 +21,7 @@ const primaryLinks = [
   { href: "/contato", label: "Contato" },
   { href: "/sobre", label: "Sobre" },
   { href: "/conta/login", label: "Conta" },
+  { href: "/pontuacao", label: "Pontuação" },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
