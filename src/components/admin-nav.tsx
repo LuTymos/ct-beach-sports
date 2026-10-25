@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -33,10 +33,13 @@ function isActivePath(pathname: string, href: string) {
 export function AdminNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [lastPathname, setLastPathname] = useState(pathname);
 
-  useEffect(() => {
+  // Fecha o menu ao mudar de rota (ajuste de estado durante o render, sem useEffect).
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <div className="rounded-xl border bg-card px-3 py-3 sm:px-4">
