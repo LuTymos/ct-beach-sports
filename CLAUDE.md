@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Convenções por área (Next 16, RSC, Server Actions, Supabase, Tailwind 4, Zod 4, shadcn, pontuação) ficam em `.claude/rules/` e carregam por caminho de arquivo. O domínio do ranking (lançar resultado, inscrições, import CSV) está na skill `torneio-ranking`. Não repita essas regras aqui.
 
+Contexto sob demanda em `knowledge_base/` (não carrega sozinho; leia o que a tarefa pede): `constitution.md` (princípios), `data-model.md`, `flows.md`, `glossary.md` e `decisions/` (ADRs). Mudou regra de negócio ou de acesso: atualize o arquivo correspondente na mesma PR.
+
+Hooks em `.claude/settings.json` (scripts em `.claude/hooks/`) bloqueiam edição de `.env*` e de migrations já existentes, e avisam quando um `*.test.ts` novo não está no script `test` ou quando o ESLint falha no arquivo editado. Se um hook negar uma edição, não contorne: crie a migration nova ou ajuste o `package.json`.
+
 ## Comandos
 
 ```bash
@@ -29,7 +33,7 @@ npx tsx --test src/features/ranking/ranking-href.test.ts   # um arquivo só
 - `server.ts`: cliente por request com cookies, respeita RLS.
 - `require-admin.ts`: `requireAdmin()` no topo de **toda** action/página admin, antes de ler o input. Redireciona para `/admin/login`.
 - `service.ts`: `service_role`, ignora RLS. Só via `createAdminServiceClient()` (checa admin) ou em fluxos de convite. Nunca no client.
-- Pagamento (`stage_entry_members.paid`) é escondido do público por RLS e só aparece nas queries admin (`getStageEntriesAdmin`); `getStageEntriesPublic` é a versão sem `paid`. Não misture as duas.
+- Pagamento (`stage_entry_members.paid`) é escondido do público por **grants de coluna** (migration 010), não por RLS; o admin o lê via `service_role` em `getStageEntriesAdmin`, e `getStageEntriesPublic` é a versão sem `paid`. Não misture as duas.
 - `middleware.ts` (nome ainda `middleware`, não `proxy`) só renova a sessão; ele **não** protege rotas. A proteção está em `requireAdmin()` e no RLS.
 
 **Erros e feedback.** Actions não retornam erro para a UI: chamam `redirect(path?error=<code>)` com um código de `ERROR_MESSAGES` em `src/lib/flash-errors.ts`, e a página mapeia o código para texto (`MappedErrorAlert`). Mensagens de admin usam cookie flash (`features/admin/flash-error.ts`). Para uma nova falha, adicione um código ali em vez de passar mensagem crua do Supabase/Zod.

@@ -1,12 +1,11 @@
 # Projeto CT Beach Sports
 
-- Produto: ranking do torneio dos alunos (MVP simples para o professor).
+Produto, stack e tabela de pontos estão no `AGENTS.md`. Aqui só o que não está lá:
+
 - Dev em WSL; não exigir Docker.
-- Stack pinada (aprox.): Next **16.3** + React **19.2** + Tailwind **4** + Zod **4** + `@supabase/ssr` **0.6** + shadcn + Vercel Hobby.
-- Docs Next da versão instalada: `node_modules/next/dist/docs/`.
-- Não inventar features fora do pedido (inscrição de conta do atleta, etc. são roadmap).
+- Docs do Next da versão instalada: `node_modules/next/dist/docs/` (ler antes de usar API nova).
+- Não inventar funcionalidade fora do pedido; o backlog está no Trello.
 - Pontuação apenas via `src/lib/scoring.ts`.
-- Import CSV: `/admin/importacao` — match por nome exato; pontos via `scoring.ts`.
 - Público lê; só admin autenticado escreve.
 - Preferir Server Components; `"use client"` só quando necessário.
-- Commits/push GitHub só se o usuário pedir explicitamente.
+- Commits e push só se o usuário pedir explicitamente.

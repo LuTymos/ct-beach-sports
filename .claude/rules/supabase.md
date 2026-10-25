@@ -5,7 +5,7 @@ paths:
   - "src/features/**/*.ts"
 ---
 
-# Supabase (@supabase/ssr 0.6 + supabase-js 2.x)
+# Supabase (@supabase/ssr 0.12 + supabase-js 2.x)
 
 ## Clients (oficial)
 

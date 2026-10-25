@@ -6,7 +6,7 @@ paths:
 
 # Server Actions
 
-Versões: Next 16.3 + Zod 4.4. Colocar actions em `src/features/*/actions.ts` com `'use server'`.
+Versões: Next 16.3 + Zod 4. Colocar actions em `src/features/*/actions.ts` com `'use server'`.
 
 ## Checklist em toda action de escrita
 
