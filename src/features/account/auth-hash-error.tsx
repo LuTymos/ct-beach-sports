@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,22 +10,53 @@ const MESSAGES: Record<string, string> = {
   access_denied: "Acesso negado pelo link do e-mail. Peça um novo convite ao professor.",
 };
 
+function readHashParams(): URLSearchParams | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  return hash ? new URLSearchParams(hash) : null;
+}
+
+function readErrorMessage(): string | null {
+  const params = readHashParams();
+  if (!params) return null;
+  if (params.get("access_token") && params.get("refresh_token")) return null;
+
+  const errorCode = params.get("error_code") ?? params.get("error");
+  const description = params.get("error_description");
+  if (!errorCode && !description) return null;
+
+  return (
+    (errorCode && MESSAGES[errorCode]) ||
+    "Link do e-mail inválido. Peça um novo convite ao professor."
+  );
+}
+
+const subscribeNever = () => () => {};
+
 /**
  * Handles hash fragments on /conta/login:
  * - errors → show message
  * - access_token (invite/recovery) → set session and go to definir senha
+ *
+ * O fragmento da URL só existe no navegador. O componente interno só monta
+ * depois da hidratação, então lê o fragmento sem divergir do HTML do servidor.
  */
 export function AuthHashError() {
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false
+  );
+  return hydrated ? <AuthHashHandler /> : null;
+}
+
+function AuthHashHandler() {
   const router = useRouter();
-  const [message, setMessage] = useState<string | null>(null);
+  const [message] = useState(readErrorMessage);
 
   useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, "");
-    if (!hash) return;
+    const params = readHashParams();
+    if (!params) return;
 
-    const params = new URLSearchParams(hash);
-    const errorCode = params.get("error_code") ?? params.get("error");
-    const description = params.get("error_description")?.replace(/\+/g, " ");
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
     const type = params.get("type");
@@ -52,12 +83,7 @@ export function AuthHashError() {
       return;
     }
 
-    if (!errorCode && !description) return;
-
-    setMessage(
-      (errorCode && MESSAGES[errorCode]) ||
-        "Link do e-mail inválido. Peça um novo convite ao professor."
-    );
+    if (!readErrorMessage()) return;
 
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }, [router]);
