@@ -15,10 +15,10 @@ export function HomeFeaturedStage({ stage }: { stage: Stage }) {
         {stage.status === "scheduled" ? "Próxima etapa" : "Destaque da última etapa"}
       </h2>
       <Link href={`/etapas/${stage.id}`} className="block">
-        <Card className="border-amber-500/20 shadow-sm transition hover:border-amber-500/40">
+        <Card className="border-border shadow-sm transition hover:border-primary/40">
           <CardContent className="space-y-3 p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3 text-amber-600 dark:text-amber-500">
+              <div className="flex min-w-0 items-center gap-3 text-primary">
                 <Trophy className="h-7 w-7 shrink-0" aria-hidden="true" />
                 <h3 className="min-w-0 text-xl font-bold text-foreground">{stage.title}</h3>
               </div>
@@ -36,7 +36,7 @@ export function HomeFeaturedStage({ stage }: { stage: Stage }) {
                 {stage.location}
               </p>
             ) : null}
-            <p className="pt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
+            <p className="pt-1 text-sm font-medium text-primary">
               Ver etapa <ArrowRight className="inline h-4 w-4" aria-hidden="true" />
             </p>
           </CardContent>

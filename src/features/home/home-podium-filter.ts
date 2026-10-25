@@ -4,7 +4,7 @@ import { toSingleCategoryRanking } from "@/features/ranking/to-single-category-r
 
 export type PodiumFilter = ResultCategory | "geral";
 
-export const PODIUM_QUERY_KEY = "podio";
+const PODIUM_QUERY_KEY = "podio";
 
 const PODIUM_SIZE = 3;
 

@@ -24,6 +24,9 @@ const CHIPS: Array<{ value: PodiumFilter; label: string }> = [
   })),
 ];
 
+// Ordem do DOM: 2º, 1º, 3º; colunas explícitas mantêm o 1º centralizado com vagas vazias.
+const PODIUM_COLUMNS = ["col-start-1", "col-start-2", "col-start-3"];
+
 export function HomePodium({ active, top }: HomePodiumProps) {
   const cells = arrangePodium(top);
   const emptyText =
@@ -62,12 +65,12 @@ export function HomePodium({ active, top }: HomePodiumProps) {
           {emptyText}
         </p>
       ) : (
-        <ol className="grid grid-cols-3 items-end gap-2 sm:gap-3">
+        <ol aria-label="Pódio" className="grid grid-cols-3 items-end gap-2 sm:gap-3">
           {cells.map((row, index) => {
-            if (!row) return <li key={`empty-${index}`} aria-hidden="true" />;
+            if (!row) return null;
             const first = row.position === 1;
             return (
-              <li key={row.athleteId} className="min-w-0">
+              <li key={row.athleteId} className={cn("min-w-0", PODIUM_COLUMNS[index])}>
                 <Link
                   href={`/atletas/${row.athleteId}`}
                   className={cn(
@@ -81,16 +84,16 @@ export function HomePodium({ active, top }: HomePodiumProps) {
                     className={cn(
                       "text-xs font-semibold uppercase tracking-wider",
                       first
-                        ? "text-amber-600 dark:text-amber-400"
+                        ? "text-amber-700"
                         : "text-muted-foreground"
                     )}
                   >
                     {row.position}º
                   </span>
-                  <span className="min-w-0 truncate text-sm font-semibold sm:text-base">
+                  <span title={row.name} className="min-w-0 truncate text-sm font-semibold sm:text-base">
                     {row.name}
                   </span>
-                  <span className="min-w-0 truncate text-xs text-muted-foreground sm:text-sm">
+                  <span title={row.team ?? undefined} className="min-w-0 truncate text-xs text-muted-foreground sm:text-sm">
                     {row.team ?? "—"}
                   </span>
                   <span className="text-base font-bold tabular-nums sm:text-lg">
