@@ -1,7 +1,6 @@
 ---
-description: Estrutura de pastas e naming do MVP
-globs: src/**/*.{ts,tsx}
-alwaysApply: false
+paths:
+  - "src/**/*.{ts,tsx}"
 ---
 
 # Estrutura

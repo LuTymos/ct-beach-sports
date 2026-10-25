@@ -66,4 +66,4 @@ npx vercel
 
 ## Estrutura
 
-Veja `AGENTS.md` e `.cursor/rules/` para contexto do agente.
+Veja `AGENTS.md`, `CLAUDE.md` e `.claude/rules/` para contexto do agente.

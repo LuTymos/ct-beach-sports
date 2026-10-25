@@ -1,7 +1,7 @@
 ---
-description: Tailwind CSS v4 + tokens do projeto
-globs: src/**/*.{css,tsx},postcss.config.*
-alwaysApply: false
+paths:
+  - "src/**/*.{css,tsx}"
+  - "postcss.config.*"
 ---
 
 # Tailwind v4.3

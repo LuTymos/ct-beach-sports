@@ -1,12 +1,12 @@
 ---
-description: Server Actions — auth, Zod 4, revalidate
-globs: src/features/**/*.ts,src/app/**/actions.ts
-alwaysApply: false
+paths:
+  - "src/features/**/*.ts"
+  - "src/app/**/actions.ts"
 ---
 
 # Server Actions
 
-Versões: Next 16.3 + Zod 4.4. Colocar actions em `src/features/*/actions.ts` com `'use server'`.
+Versões: Next 16.3 + Zod 4. Colocar actions em `src/features/*/actions.ts` com `'use server'`.
 
 ## Checklist em toda action de escrita
 

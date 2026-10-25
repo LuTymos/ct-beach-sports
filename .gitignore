@@ -31,7 +31,6 @@ Desktop.ini
 *.pem
 
 # local chat backups (not for git)
-.cursor/chat-backup/
 
 # debug
 npm-debug.log*
@@ -69,5 +68,5 @@ ROADMAP.md
 docs/
 *.plan.md
 
-# Cursor / agent tooling — keep project rules & skills-lock; ignore vendored skills
+# Agent tooling — keep .claude/ rules & skills and skills-lock; ignore vendored skills
 .agents/

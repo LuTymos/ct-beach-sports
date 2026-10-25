@@ -1,7 +1,8 @@
 ---
-description: Next.js 16.3 App Router — async APIs, Turbopack, docs
-globs: src/app/**/*.{ts,tsx},src/middleware.ts,next.config.*
-alwaysApply: false
+paths:
+  - "src/app/**/*.{ts,tsx}"
+  - "src/middleware.ts"
+  - "next.config.*"
 ---
 
 # Next.js 16.3
