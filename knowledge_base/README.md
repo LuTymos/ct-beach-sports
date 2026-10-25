@@ -9,6 +9,7 @@ Contexto de domínio e decisões que o código sozinho não conta. Não é carre
 | `data-model.md` | Tabelas, restrições e RLS. Confirme colunas exatas nas migrations. |
 | `flows.md` | Como um resultado nasce: lançamento manual, import CSV, inscrição de duplas e fechamento de etapa. |
 | `decisions/` | Por que as coisas são como são (ADRs). |
+| `specs/` e `plans/` | Design e plano de implementação de uma mudança (ex.: reestruturação da home, PR #23). Leia só ao retomar ou alterar aquela mudança; o código é a fonte da verdade. |
 
 ## Manutenção
 
