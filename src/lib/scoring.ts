@@ -8,6 +8,9 @@ const PODIUM_POINTS: Record<PodiumSeries, Record<Placement, number>> = {
   bronze: { 1: 30, 2: 20, 3: 10, 4: 5 },
 };
 
+export const PODIUM_SERIES: PodiumSeries[] = ["ouro", "prata", "bronze"];
+export const PLACEMENTS: Placement[] = [1, 2, 3, 4];
+
 export const PARTICIPATION_POINTS = 5;
 
 export const SERIES_LABELS: Record<Series, string> = {
@@ -51,6 +54,16 @@ export function calculatePoints(series: Series, placement: Placement | null): nu
   }
 
   return PODIUM_POINTS[series as PodiumSeries][placement as Placement];
+}
+
+/** Podium table for display (public "Como pontua" page), derived from `calculatePoints`. */
+export function getPodiumTable(): { placement: Placement; points: Record<PodiumSeries, number> }[] {
+  return PLACEMENTS.map((placement) => ({
+    placement,
+    points: Object.fromEntries(
+      PODIUM_SERIES.map((series) => [series, calculatePoints(series, placement)])
+    ) as Record<PodiumSeries, number>,
+  }));
 }
 
 export function formatResultLabel(series: Series, placement: Placement | null): string {
