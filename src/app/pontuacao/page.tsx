@@ -4,11 +4,71 @@ import { Trophy, Medal, Award, CheckCircle2, ArrowRight, HelpCircle } from "luci
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  PARTICIPATION_POINTS,
+  PODIUM_SERIES,
+  SERIES_LABELS,
+  calculatePoints,
+  getPodiumTable,
+  type Placement,
+  type PodiumSeries,
+} from "@/lib/scoring";
 
 export const metadata: Metadata = {
   title: "Como Pontua | CT Beach Sports",
   description:
     "Entenda como funciona o sistema de pontuação e ranking dos torneios do CT Beach Sports. Veja as pontuações por Série e Colocação.",
+};
+
+const PODIUM_TABLE = getPodiumTable();
+const BRONZINHO_POINTS = calculatePoints("bronzinho", 1);
+
+const PLACEMENT_LABELS: Record<Placement, { card: string; table: string }> = {
+  1: { card: "🏆 Campeões (1º)", table: "1º Lugar (Campeão)" },
+  2: { card: "🥈 Vice-campeões (2º)", table: "2º Lugar (Vice)" },
+  3: { card: "🥉 Terceiro Lugar (3º)", table: "3º Lugar" },
+  4: { card: "Quarto Lugar (4º)", table: "4º Lugar" },
+};
+
+const SERIES_STYLE: Record<
+  PodiumSeries,
+  {
+    Icon: typeof Trophy;
+    description: string;
+    card: string;
+    iconWrap: string;
+    title: string;
+    highlight: string;
+    head: string;
+  }
+> = {
+  ouro: {
+    Icon: Trophy,
+    description: "A divisão principal do torneio",
+    card: "border-amber-500/30 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent shadow-sm",
+    iconWrap: "bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400",
+    title: "text-amber-600 dark:text-amber-400",
+    highlight: "text-amber-600 dark:text-amber-400",
+    head: "text-amber-600 dark:text-amber-400",
+  },
+  prata: {
+    Icon: Medal,
+    description: "Disputa acirrada na chave Prata",
+    card: "border-slate-300 dark:border-slate-800 bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/30 dark:to-transparent shadow-sm",
+    iconWrap: "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+    title: "text-slate-700 dark:text-slate-300",
+    highlight: "text-slate-700 dark:text-slate-300",
+    head: "text-slate-600 dark:text-slate-300",
+  },
+  bronze: {
+    Icon: Award,
+    description: "Evolução e experiência em quadra",
+    card: "border-amber-900/20 dark:border-amber-900/40 bg-gradient-to-b from-amber-900/5 to-transparent dark:from-amber-950/10 dark:to-transparent shadow-sm",
+    iconWrap: "bg-amber-900/10 dark:bg-amber-900/30 text-amber-800 dark:text-amber-500",
+    title: "text-amber-800 dark:text-amber-500",
+    highlight: "text-amber-800 dark:text-amber-500",
+    head: "text-amber-800 dark:text-amber-500",
+  },
 };
 
 export default function ComoPontuaPage() {
@@ -26,92 +86,45 @@ export default function ComoPontuaPage() {
 
       {/* Cards das Séries */}
       <section className="grid md:grid-cols-3 gap-6">
-        {/* Série Ouro */}
-        <Card className="border-amber-500/30 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent shadow-sm">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-2">
-              <Trophy className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-2xl text-amber-600 dark:text-amber-400">Série Ouro</CardTitle>
-            <CardDescription>A divisão principal do torneio</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span className="font-semibold text-slate-900 dark:text-slate-100">🏆 Campeões (1º)</span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">100 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥈 Vice-campeões (2º)</span>
-              <span className="font-semibold">80 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥉 Terceiro Lugar (3º)</span>
-              <span className="font-semibold">60 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5">
-              <span>Quarto Lugar (4º)</span>
-              <span className="font-semibold">50 pts</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Série Prata */}
-        <Card className="border-slate-300 dark:border-slate-800 bg-gradient-to-b from-slate-50/50 to-transparent dark:from-slate-900/30 dark:to-transparent shadow-sm">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-2">
-              <Medal className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-2xl text-slate-700 dark:text-slate-300">Série Prata</CardTitle>
-            <CardDescription>Disputa acirrada na chave Prata</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span className="font-semibold text-slate-900 dark:text-slate-100">🏆 Campeões (1º)</span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">50 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥈 Vice-campeões (2º)</span>
-              <span className="font-semibold">40 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥉 Terceiro Lugar (3º)</span>
-              <span className="font-semibold">30 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5">
-              <span>Quarto Lugar (4º)</span>
-              <span className="font-semibold">20 pts</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Série Bronze */}
-        <Card className="border-amber-900/20 dark:border-amber-900/40 bg-gradient-to-b from-amber-900/5 to-transparent dark:from-amber-950/10 dark:to-transparent shadow-sm">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-amber-900/10 dark:bg-amber-900/30 flex items-center justify-center text-amber-800 dark:text-amber-500 mb-2">
-              <Award className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-2xl text-amber-800 dark:text-amber-500">Série Bronze</CardTitle>
-            <CardDescription>Evolução e experiência em quadra</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span className="font-semibold text-slate-900 dark:text-slate-100">🏆 Campeões (1º)</span>
-              <span className="font-bold text-amber-800 dark:text-amber-500">30 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥈 Vice-campeões (2º)</span>
-              <span className="font-semibold">20 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5 border-b">
-              <span>🥉 Terceiro Lugar (3º)</span>
-              <span className="font-semibold">10 pts</span>
-            </div>
-            <div className="flex justify-between items-center text-sm py-1.5">
-              <span>Quarto Lugar (4º)</span>
-              <span className="font-semibold">5 pts</span>
-            </div>
-          </CardContent>
-        </Card>
+        {PODIUM_SERIES.map((series) => {
+          const style = SERIES_STYLE[series];
+          return (
+            <Card key={series} className={style.card}>
+              <CardHeader className="text-center pb-2">
+                <div
+                  className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-2 ${style.iconWrap}`}
+                >
+                  <style.Icon className="h-6 w-6" />
+                </div>
+                <CardTitle className={`text-2xl ${style.title}`}>{SERIES_LABELS[series]}</CardTitle>
+                <CardDescription>{style.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-4">
+                {PODIUM_TABLE.map(({ placement, points }) => (
+                  <div
+                    key={placement}
+                    className={`flex justify-between items-center text-sm py-1.5 ${
+                      placement === 4 ? "" : "border-b"
+                    }`}
+                  >
+                    <span
+                      className={
+                        placement === 1
+                          ? "font-semibold text-slate-900 dark:text-slate-100"
+                          : undefined
+                      }
+                    >
+                      {PLACEMENT_LABELS[placement].card}
+                    </span>
+                    <span className={placement === 1 ? `font-bold ${style.highlight}` : "font-semibold"}>
+                      {points[series]} pts
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
       {/* Tabela Resumo */}
@@ -122,36 +135,24 @@ export default function ComoPontuaPage() {
             <TableHeader>
               <TableRow className="bg-slate-50 dark:bg-slate-900">
                 <TableHead className="font-bold">Colocação</TableHead>
-                <TableHead className="text-center font-bold text-amber-600 dark:text-amber-400">Série Ouro</TableHead>
-                <TableHead className="text-center font-bold text-slate-600 dark:text-slate-300">Série Prata</TableHead>
-                <TableHead className="text-center font-bold text-amber-800 dark:text-amber-500">Série Bronze</TableHead>
+                {PODIUM_SERIES.map((series) => (
+                  <TableHead key={series} className={`text-center font-bold ${SERIES_STYLE[series].head}`}>
+                    {SERIES_LABELS[series]}
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-semibold">1º Lugar (Campeão)</TableCell>
-                <TableCell className="text-center font-bold">100 pts</TableCell>
-                <TableCell className="text-center font-bold">50 pts</TableCell>
-                <TableCell className="text-center font-bold">30 pts</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-semibold">2º Lugar (Vice)</TableCell>
-                <TableCell className="text-center font-bold">80 pts</TableCell>
-                <TableCell className="text-center font-bold">40 pts</TableCell>
-                <TableCell className="text-center font-bold">20 pts</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-semibold">3º Lugar</TableCell>
-                <TableCell className="text-center font-bold">60 pts</TableCell>
-                <TableCell className="text-center font-bold">30 pts</TableCell>
-                <TableCell className="text-center font-bold">10 pts</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-semibold">4º Lugar</TableCell>
-                <TableCell className="text-center font-bold">50 pts</TableCell>
-                <TableCell className="text-center font-bold">20 pts</TableCell>
-                <TableCell className="text-center font-bold">5 pts</TableCell>
-              </TableRow>
+              {PODIUM_TABLE.map(({ placement, points }) => (
+                <TableRow key={placement}>
+                  <TableCell className="font-semibold">{PLACEMENT_LABELS[placement].table}</TableCell>
+                  {PODIUM_SERIES.map((series) => (
+                    <TableCell key={series} className="text-center font-bold">
+                      {points[series]} pts
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -166,7 +167,7 @@ export default function ComoPontuaPage() {
               <h3 className="text-lg font-bold">Pontos de Participação</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Todos os atletas inscritos que disputarem a etapa recebem <strong>5 pontos de participação</strong>, independentemente de se classificarem para as fases finais. Entrar em quadra já garante pontos no seu ranking!
+              Todos os atletas inscritos que disputarem a etapa recebem <strong>{PARTICIPATION_POINTS} pontos de participação</strong>, independentemente de se classificarem para as fases finais. Entrar em quadra já garante pontos no seu ranking!
             </p>
           </CardContent>
         </Card>
@@ -178,7 +179,7 @@ export default function ComoPontuaPage() {
               <h3 className="text-lg font-bold">Série Bronzinho</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Em etapas com chaveamento estendido (Bronzinho), as duplas classificadas do 1º ao 4º lugar recebem pontuação fixa de <strong>5 pontos</strong>, mantendo a igualdade e incentivando a rodagem dos atletas.
+              Em etapas com chaveamento estendido (Bronzinho), as duplas classificadas do 1º ao 4º lugar recebem pontuação fixa de <strong>{BRONZINHO_POINTS} pontos</strong>, mantendo a igualdade e incentivando a rodagem dos atletas.
             </p>
           </CardContent>
         </Card>
