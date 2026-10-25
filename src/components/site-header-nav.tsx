@@ -16,7 +16,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const primaryLinks = [
-  { href: "/", label: "Ranking" },
+  { href: "/", label: "Home" },
+  { href: "/ranking", label: "Ranking" },
   { href: "/etapas", label: "Etapas" },
   { href: "/contato", label: "Contato" },
   { href: "/sobre", label: "Sobre" },

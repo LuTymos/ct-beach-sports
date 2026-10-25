@@ -7,6 +7,7 @@ import {
   type ResultCategory,
   type ResultLevel,
 } from "@/lib/categories";
+import { pickHomeFeaturedStage } from "@/features/ranking/pick-home-stage";
 import type {
   Athlete,
   AthleteStageBreakdown,
@@ -109,6 +110,10 @@ export async function getStages(): Promise<Stage[]> {
 
   if (error) throw error;
   return (data ?? []) as Stage[];
+}
+
+export async function getHomeFeaturedStage(): Promise<Stage | null> {
+  return pickHomeFeaturedStage(await getStages());
 }
 
 export async function getStageById(id: string): Promise<Stage | null> {

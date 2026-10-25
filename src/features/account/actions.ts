@@ -107,6 +107,7 @@ export async function updateOwnAthleteProfileAction(formData: FormData) {
 
   revalidatePath(`/atletas/${id}`);
   revalidatePath("/");
+  revalidatePath("/ranking");
   revalidatePath("/admin/atletas");
   redirect(athletePath(id, "ok=1"));
 }
