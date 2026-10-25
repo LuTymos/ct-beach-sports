@@ -1,7 +1,9 @@
 ---
-description: Regras de pontuação do torneio
-globs: src/lib/scoring.ts,src/features/**/*.ts,src/features/**/*.tsx,src/app/admin/**/*.tsx
-alwaysApply: false
+paths:
+  - "src/lib/scoring.ts"
+  - "src/features/**/*.ts"
+  - "src/features/**/*.tsx"
+  - "src/app/admin/**/*.tsx"
 ---
 
 # Pontuação

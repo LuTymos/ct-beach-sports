@@ -1,7 +1,6 @@
 ---
-description: TypeScript 5.9 standards for this repo
-globs: src/**/*.{ts,tsx}
-alwaysApply: false
+paths:
+  - "src/**/*.{ts,tsx}"
 ---
 
 # TypeScript (5.9)

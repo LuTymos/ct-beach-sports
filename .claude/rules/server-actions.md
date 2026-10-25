@@ -1,7 +1,7 @@
 ---
-description: Server Actions — auth, Zod 4, revalidate
-globs: src/features/**/*.ts,src/app/**/actions.ts
-alwaysApply: false
+paths:
+  - "src/features/**/*.ts"
+  - "src/app/**/actions.ts"
 ---
 
 # Server Actions

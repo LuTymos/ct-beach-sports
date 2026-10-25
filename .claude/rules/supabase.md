@@ -1,7 +1,8 @@
 ---
-description: Supabase SSR (@supabase/ssr 0.6) + RLS
-globs: src/lib/supabase/**/*,supabase/**/*,src/features/**/*.ts
-alwaysApply: false
+paths:
+  - "src/lib/supabase/**/*"
+  - "supabase/**/*"
+  - "src/features/**/*.ts"
 ---
 
 # Supabase (@supabase/ssr 0.6 + supabase-js 2.x)

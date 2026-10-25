@@ -1,7 +1,7 @@
 ---
-description: shadcn/ui (new-york) + Radix no projeto
-globs: src/components/**/*.{ts,tsx},components.json
-alwaysApply: false
+paths:
+  - "src/components/**/*.{ts,tsx}"
+  - "components.json"
 ---
 
 # shadcn/ui

@@ -1,8 +1,3 @@
----
-description: CT Beach Sports project conventions — always apply
-alwaysApply: true
----
-
 # Projeto CT Beach Sports
 
 - Produto: ranking do torneio dos alunos (MVP simples para o professor).

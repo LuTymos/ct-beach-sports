@@ -1,7 +1,6 @@
 ---
-description: React 19.2 Server/Client Components boundary
-globs: src/**/*.{tsx,ts}
-alwaysApply: false
+paths:
+  - "src/**/*.{tsx,ts}"
 ---
 
 # React 19.2 — RSC
